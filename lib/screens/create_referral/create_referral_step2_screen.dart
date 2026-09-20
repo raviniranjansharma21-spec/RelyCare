@@ -81,9 +81,20 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
     );
 
     // Save referral locally
-    final success = await referralProvider.createReferral(referral);
+    final createdReferral = await referralProvider.createReferral(
+      patientName: patient.fullName,
+      patientAge: patient.age,
+      patientGender: patient.gender,
+      patientPhone: patient.contactNumber,
+      patientLocation: patient.villageOrLocation,
+      sourceFacility: referral.sourceFacilityId,
+      destinationFacility: referral.destinationFacilityId,
+      reason: referral.referralReason,
+      clinicalNotes: referral.clinicalNotesSummary,
+    );
 
-    if (success && mounted) {
+    if (createdReferral != null && mounted) {
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Referral saved locally. It will sync when online.'),

@@ -4,11 +4,14 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
 import '../providers/auth_provider.dart';
+import 'app_dependencies.dart';
 import 'app_router.dart';
 
 /// Root application widget for RelyCare with MultiProvider and GoRouter.
 class RelyCareApp extends StatefulWidget {
-  const RelyCareApp({super.key});
+  final AppDependencies? dependencies;
+
+  const RelyCareApp({super.key, this.dependencies});
 
   @override
   State<RelyCareApp> createState() => _RelyCareAppState();
@@ -34,14 +37,20 @@ class _RelyCareAppState extends State<RelyCareApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _authProvider,
-      child: MaterialApp.router(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        routerConfig: _router,
+    final activeDependencies = widget.dependencies ?? AppDependencies();
+
+    return RelyCareScope(
+      dependencies: activeDependencies,
+      child: ChangeNotifierProvider.value(
+        value: _authProvider,
+        child: MaterialApp.router(
+          title: AppConstants.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          routerConfig: _router,
+        ),
       ),
     );
   }
 }
+
