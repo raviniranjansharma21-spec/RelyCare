@@ -4,7 +4,12 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-from matching_service import find_patient_matches
+from matching_service import (
+    _field_score,
+    find_patient_matches,
+    normalize_phone,
+    score_patient_match,
+)
 
 
 DATA_FILE = Path(__file__).with_name("sample_patients.json")
@@ -74,6 +79,41 @@ def run_tests() -> None:
     assert find_patient_matches(missing_phone, patients, minimum_score=0, result_limit=1)
     assert find_patient_matches(no_match, patients, minimum_score=90, result_limit=3) == []
     assert len(possible_matches) == 3
+
+    assert normalize_phone("00919876543210") == "919876543210"
+    assert normalize_phone("919876543210") == "919876543210"
+    assert _field_score("phone", {"phone": "00919876543210"}, {"phone": "919876543210"}) == 100.0
+    assert _field_score("phone", {"phone": "919876543210"}, {"phone": "919876543211"}) == 0.0
+    assert _field_score("phone", {"phone": "123456789012"}, {"phone": "789012"}) == 0.0
+    assert _field_score("phone", {"phone": None}, {"phone": "919876543210"}) is None
+
+    valid_weights = {"name": 1.0, "phone": 0.0}
+    weighted_result = score_patient_match(
+        {"name": "Rahul Sharma", "phone": "919876543210"},
+        rahul_sharma,
+        weights=valid_weights,
+    )
+    assert set(weighted_result["individual_field_scores"]) == set(valid_weights)
+    assert score_patient_match(
+        rahul_sharma, rahul_sharma, weights={field: 0.0 for field in valid_weights}
+    )["total_score"] == 0.0
+    assert score_patient_match(rahul_sharma, rahul_sharma, weights={})["total_score"] == 0.0
+
+    invalid_weights = [
+        {"unknown": 1.0},
+        {"name": -1.0},
+        {"name": float("nan")},
+        {"name": float("inf")},
+        {"name": float("-inf")},
+    ]
+    for weights in invalid_weights:
+        try:
+            score_patient_match(rahul_sharma, rahul_sharma, weights=weights)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"Invalid weights were accepted: {weights}")
+
     print("\nAll matching checks passed.")
 
 

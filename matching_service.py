@@ -1,5 +1,6 @@
 """Explainable fuzzy patient identity matching for synthetic referral records."""
 
+import math
 import re
 from typing import Any, Dict, List, Optional
 
@@ -15,6 +16,7 @@ WEIGHTS = {
     "gender": 0.05,
     "referral_context": 0.15,
 }
+SUPPORTED_FIELDS = frozenset(WEIGHTS)
 
 HIGH_THRESHOLD = 85.0
 MEDIUM_THRESHOLD = 70.0
@@ -33,9 +35,9 @@ def normalize_name(value: Any) -> str:
 
 
 def normalize_phone(value: Any) -> str:
-    """Keep phone digits and use the last 10 digits when a country code is present."""
+    """Keep all phone digits after removing an international 00 prefix."""
     digits = re.sub(r"\D", "", str(value or ""))
-    return digits[-10:] if len(digits) >= 10 else digits
+    return digits[2:] if digits.startswith("00") else digits
 
 
 def normalize_gender(value: Any) -> str:
@@ -75,7 +77,7 @@ def _field_score(field: str, incoming: Dict[str, Any], existing: Dict[str, Any])
         second = normalize_phone(existing_value)
         if not first or not second:
             return None
-        return 100.0 if first == second else float(fuzz.ratio(first, second))
+        return 100.0 if first == second else 0.0
 
     if field == "age":
         try:
@@ -141,7 +143,21 @@ def score_patient_match(
     medium_threshold: float = MEDIUM_THRESHOLD,
 ) -> Dict[str, Any]:
     """Score one incoming record against one existing record."""
-    active_weights = weights or WEIGHTS
+    if weights is None:
+        active_weights = WEIGHTS
+    else:
+        unknown_fields = set(weights) - SUPPORTED_FIELDS
+        if unknown_fields:
+            raise ValueError(f"Unsupported weight fields: {sorted(unknown_fields)}")
+        for field, weight in weights.items():
+            try:
+                valid_weight = math.isfinite(weight)
+            except TypeError as error:
+                raise ValueError(f"Weight for {field!r} must be finite") from error
+            if not valid_weight or weight < 0:
+                raise ValueError(f"Weight for {field!r} must be finite and non-negative")
+        active_weights = weights
+
     field_scores = {
         field: _field_score(field, incoming_patient, existing_patient)
         for field in active_weights
