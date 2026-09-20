@@ -86,12 +86,7 @@ class _PHCDashboardScreenState extends State<PHCDashboardScreen> {
                 height: 52,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Create Referral flow opening...'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    context.push('/create-referral');
                   },
                   icon: const Icon(Icons.add_rounded, size: 22, color: Colors.white),
                   label: Text(
