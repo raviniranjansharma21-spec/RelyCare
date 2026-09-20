@@ -29,6 +29,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() async {
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter valid email/phone and password.'),
+        ),
+      );
+      return;
+    }
+
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.login(
       emailOrPhone: _emailPhoneController.text.trim(),
@@ -41,7 +50,8 @@ class _LoginScreenState extends State<LoginScreen> {
           context.go('/hospital-dashboard');
         case 'Patient':
           context.go('/user-tracking');
-        default: // 'PHC Staff' and any unrecognised role
+        case 'PHC Staff':
+        default:
           context.go('/phc-dashboard');
       }
     }
@@ -176,6 +186,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       hintText: 'Email or Phone',
                       prefixIcon: Icons.person_outline_rounded,
                       keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter email or phone number';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'Must be at least 3 characters';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -187,6 +206,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       hintText: 'Password',
                       prefixIcon: Icons.lock_outline_rounded,
                       obscureText: _obscurePassword,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        if (value.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        return null;
+                      },
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
@@ -449,16 +477,18 @@ class _LoginScreenState extends State<LoginScreen> {
     bool obscureText = false,
     Widget? suffixIcon,
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        validator: validator,
         style: GoogleFonts.inter(
           fontSize: 15,
           fontWeight: FontWeight.w400,

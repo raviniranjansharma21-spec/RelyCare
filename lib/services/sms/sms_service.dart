@@ -8,7 +8,7 @@ import '../../core/utils/logger.dart';
 /// Plain SMS is unencrypted. Use minimal referral tokens and IDs only.
 class SmsService {
   /// Encodes a referral into a compact, privacy-safe SMS fallback payload.
-  /// Format: RELYCARE#<TOKEN>#<SRC_FACILITY>#<DEST_FACILITY>#<PATIENT_INITIALS>#<URGENCY>
+  /// Format: `RELYCARE#<TOKEN>#<SRC_FACILITY>#<DEST_FACILITY>#<PATIENT_INITIALS>#<URGENCY>`
   String generateSmsPayload(Referral referral) {
     final initials = referral.patient != null && referral.patient!.fullName.isNotEmpty
         ? referral.patient!.fullName.split(' ').map((e) => e[0].toUpperCase()).join('')

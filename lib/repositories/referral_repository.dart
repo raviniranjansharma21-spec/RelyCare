@@ -15,10 +15,10 @@ class ReferralRepository {
 
   ReferralRepository({
     required this._localStorage,
-    required ApiService apiService,
+    required this._apiService,
     required this._connectivityService,
     required this._smsService,
-  })  : _apiService = apiService;
+  });
 
   /// Creates a new referral adhering to the offline-first flow.
   Future<Referral> createReferral(Referral referral) async {

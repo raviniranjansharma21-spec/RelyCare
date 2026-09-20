@@ -9,14 +9,16 @@ class SyncService {
   final ApiService _apiService;
   final ConnectivityService _connectivityService;
 
+  ApiService get apiService => _apiService;
+
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
 
   SyncService({
     required this._localStorage,
-    required ApiService apiService,
+    required this._apiService,
     required this._connectivityService,
-  })  : _apiService = apiService;
+  });
 
   /// Triggers full synchronization of all pending offline records.
   Future<int> syncPendingReferrals() async {
@@ -38,7 +40,7 @@ class SyncService {
       final pendingReferrals = await _localStorage.getPendingSyncReferrals();
       AppLogger.info('Found ${pendingReferrals.length} pending referrals to sync', 'SyncService');
 
-      for (final referral in pendingReferrals) {
+      for (final _ in pendingReferrals) {
         // TODO (Sync Specialist): Call API to upload referral, then update local sync state
         // await _apiService.uploadReferral(referral);
         // await _localStorage.updateReferralSyncState(referral.id, SyncState.synced);

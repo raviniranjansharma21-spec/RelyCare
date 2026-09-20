@@ -37,13 +37,7 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
   }
 
   void _handleNext() {
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter patient full name.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
@@ -140,6 +134,15 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
                         hintText: 'e.g. Ramesh Kumar',
                         prefixIcon: Icons.person_outline_rounded,
                         keyboardType: TextInputType.name,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Patient full name is required';
+                          }
+                          if (value.trim().length < 2) {
+                            return 'Name must be at least 2 characters';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 18),
 
@@ -159,6 +162,16 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
                                   hintText: 'e.g. 42',
                                   prefixIcon: Icons.calendar_today_outlined,
                                   keyboardType: TextInputType.number,
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Age is required';
+                                    }
+                                    final age = int.tryParse(value.trim());
+                                    if (age == null || age < 0 || age > 120) {
+                                      return 'Enter valid age (0-120)';
+                                    }
+                                    return null;
+                                  },
                                 ),
                               ],
                             ),
@@ -185,9 +198,19 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
                       const SizedBox(height: 8),
                       _buildInputField(
                         controller: _phoneController,
-                        hintText: 'e.g. 98765 43210',
+                        hintText: 'e.g. 9876543210',
                         prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          final digitsOnly = value.replaceAll(RegExp(r'\D'), '');
+                          if (digitsOnly.length != 10) {
+                            return 'Phone must be 10 digits';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 18),
 
@@ -199,6 +222,15 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
                         hintText: 'e.g. Khed, Ratnagiri',
                         prefixIcon: Icons.location_on_outlined,
                         keyboardType: TextInputType.streetAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Village / Location is required';
+                          }
+                          if (value.trim().length < 2) {
+                            return 'Location must be at least 2 characters';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 22),
 
@@ -504,21 +536,23 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
     );
   }
 
-  /// Standard Styled Input Field
+  /// Standard Styled Form Input Field
   Widget _buildInputField({
     required TextEditingController controller,
     required String hintText,
     required IconData prefixIcon,
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        validator: validator,
         style: GoogleFonts.inter(
           fontSize: 15,
           fontWeight: FontWeight.w400,
@@ -546,73 +580,103 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
     );
   }
 
-  /// Gender Dropdown Field
+  /// Gender Dropdown Field with FormField validation
   Widget _buildGenderDropdown() {
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        color: AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.people_outline_rounded,
-            color: Color(0xFF94A3B8),
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedGender,
-                hint: Text(
-                  'Select Gender',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF94A3B8),
+    return FormField<String>(
+      initialValue: _selectedGender,
+      validator: (val) {
+        if (_selectedGender == null || _selectedGender!.isEmpty) {
+          return 'Please select gender';
+        }
+        return null;
+      },
+      builder: (FormFieldState<String> state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.inputBackground,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.people_outline_rounded,
+                    color: Color(0xFF94A3B8),
+                    size: 20,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                isExpanded: true,
-                icon: const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFF94A3B8),
-                  size: 20,
-                ),
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF1E293B),
-                ),
-                dropdownColor: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                items: _genderOptions.map((String gender) {
-                  return DropdownMenuItem<String>(
-                    value: gender,
-                    child: Text(
-                      gender,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF1E293B),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedGender,
+                        hint: Text(
+                          'Select Gender',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        isExpanded: true,
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Color(0xFF94A3B8),
+                          size: 20,
+                        ),
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF1E293B),
+                        ),
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        items: _genderOptions.map((String gender) {
+                          return DropdownMenuItem<String>(
+                            value: gender,
+                            child: Text(
+                              gender,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedGender = newValue;
+                          });
+                          state.didChange(newValue);
+                        },
                       ),
                     ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedGender = newValue;
-                  });
-                },
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
+            if (state.hasError)
+              Padding(
+                padding: const EdgeInsets.only(left: 12.0, top: 4.0),
+                child: Text(
+                  state.errorText!,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFFDC2626),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

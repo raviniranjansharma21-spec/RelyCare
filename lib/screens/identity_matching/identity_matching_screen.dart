@@ -34,6 +34,9 @@ class _IdentityMatchingScreenState extends State<IdentityMatchingScreen> {
   }
 
   void _handleRejectMatch() {
+    setState(() {
+      _isConfirmed = false;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Match Rejected: New patient profile will be created.'),
@@ -93,23 +96,25 @@ class _IdentityMatchingScreenState extends State<IdentityMatchingScreen> {
                     child: SizedBox(
                       height: 50,
                       child: OutlinedButton.icon(
-                        onPressed: _handleRejectMatch,
-                        icon: const Icon(
+                        onPressed: _isConfirmed ? null : _handleRejectMatch,
+                        icon: Icon(
                           Icons.close_rounded,
                           size: 18,
-                          color: Color(0xFF334155),
+                          color: _isConfirmed ? const Color(0xFF94A3B8) : const Color(0xFF334155),
                         ),
                         label: Text(
                           'Not Same Patient',
                           style: GoogleFonts.inter(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF334155),
+                            color: _isConfirmed ? const Color(0xFF94A3B8) : const Color(0xFF334155),
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: const Color(0xFFF1F5F9),
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
+                          side: BorderSide(
+                            color: _isConfirmed ? const Color(0xFFE2E8F0) : const Color(0xFFCBD5E1),
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),

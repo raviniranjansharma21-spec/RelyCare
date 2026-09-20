@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Public read-only screen for patients and family members to track referral status.
@@ -18,6 +19,7 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
   final _referralIdController = TextEditingController();
   bool _showResult = false;
   bool _isLoading = false;
+  String? _errorMessage;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -42,37 +44,59 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
   }
 
   void _handleTrack() async {
-    final id = _referralIdController.text.trim();
+    final id = _referralIdController.text.trim().toUpperCase();
+
     if (id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please enter a Referral ID.',
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          backgroundColor: AppColors.primaryDark,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      setState(() {
+        _errorMessage = 'Please enter a Referral ID.';
+        _showResult = false;
+      });
       return;
     }
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
       _showResult = false;
     });
 
     // Simulate network fetch
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future.delayed(const Duration(milliseconds: 700));
 
     if (mounted) {
       setState(() {
         _isLoading = false;
-        _showResult = true;
+        if (id == 'RC-2026-000142') {
+          _showResult = true;
+          _errorMessage = null;
+          _fadeController.forward(from: 0);
+        } else {
+          _showResult = false;
+          _errorMessage = 'Referral ID not found. Please check and try again.';
+        }
       });
-      _fadeController.forward(from: 0);
+    }
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    try {
+      final uri = Uri.parse('tel:$phoneNumber');
+      final launched = await launchUrl(uri);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Calling not supported on this device.'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Calling not supported on this device.'),
+          ),
+        );
+      }
     }
   }
 
@@ -97,6 +121,42 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: _buildSearchCard(),
             ),
+
+            // ===================== ERROR MESSAGE BANNER =====================
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: Color(0xFFDC2626),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFB91C1C),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
 
             // ===================== RESULT CARDS (animated) =====================
             if (_showResult) ...[
@@ -308,6 +368,22 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
                   ),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          // Hint text
+          Padding(
+            padding: const EdgeInsets.only(left: 4.0),
+            child: Text(
+              'Try: RC-2026-000142 (demo)',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF94A3B8),
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
 
@@ -828,7 +904,7 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'District Hospital Desk: 1800-419-0021',
+                  'District Hospital Desk: +91 1234567890',
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
@@ -840,25 +916,7 @@ class _UserTrackingScreenState extends State<UserTrackingScreen>
           ),
           const SizedBox(width: 8),
           ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Calling District Hospital Desk…',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  backgroundColor: AppColors.primary,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-            },
+            onPressed: () => _makeCall('+911234567890'),
             icon: const Icon(Icons.call_rounded, size: 14),
             label: Text(
               'Call',

@@ -64,7 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text('Rampur Primary Health Centre', style: AppTextStyles.heading3),
                           Text('Facility Code: PHC-104 • District: East', style: AppTextStyles.bodySmall),
                         ],
@@ -89,7 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
 
             // Quick Actions
-            const Text('Quick Actions', style: AppTextStyles.heading2),
+            Text('Quick Actions', style: AppTextStyles.heading2),
             const SizedBox(height: 12),
             PrimaryButton(
               label: 'Create New Referral (PHC)',

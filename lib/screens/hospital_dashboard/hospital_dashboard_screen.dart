@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/bottom_nav_bar.dart';
 
 /// High-Fidelity Hospital Dashboard Screen for District Hospital Staff.
 /// Follows the exact RelyCare design system with curved blue header,
@@ -17,6 +20,13 @@ class HospitalDashboardScreen extends StatefulWidget {
 class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
   int _currentNavIndex = 0;
   bool _isOnline = true;
+
+  final List<BottomNavItem> _navItems = const [
+    BottomNavItem(icon: Icons.home_rounded, label: 'Home'),
+    BottomNavItem(icon: Icons.move_to_inbox_outlined, label: 'Incoming'),
+    BottomNavItem(icon: Icons.sync_rounded, label: 'Sync', badgeCount: 4),
+    BottomNavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -193,11 +203,21 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentNavIndex,
+        items: _navItems,
+        activeColor: AppColors.primary,
+        inactiveColor: const Color(0xFF64748B),
+        onTap: (index) {
+          setState(() {
+            _currentNavIndex = index;
+          });
+        },
+      ),
     );
   }
 
-  /// Curved Blue Header with Brand Badge, Notification Bell, Doctor Greeting, and Floating Status Pill
+  /// Curved Blue Header with Brand Badge, Notification Bell, Doctor Greeting, Logout, and Floating Status Pill
   Widget _buildHeader(Size size) {
     return Stack(
       clipBehavior: Clip.none,
@@ -222,7 +242,7 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
               children: [
                 const SizedBox(height: 8),
 
-                // Top Row: RelyCare White Pill + Notification Bell
+                // Top Row: RelyCare White Pill + Notification Bell & Logout
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -261,34 +281,58 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
                       ),
                     ),
 
-                    // Notification Bell with Red Dot
-                    Stack(
+                    Row(
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: const Icon(
-                            Icons.notifications_none_rounded,
+                        // Notification Bell with Red Dot
+                        Stack(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.notifications_none_rounded,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('No new notifications.'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                            ),
+                            Positioned(
+                              right: 2,
+                              top: 2,
+                              child: Container(
+                                width: 9,
+                                height: 9,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFEF4444),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 14),
+
+                        // Logout Button
+                        IconButton(
+                          icon: const Icon(
+                            Icons.logout_rounded,
                             color: Colors.white,
                             size: 22,
                           ),
-                        ),
-                        Positioned(
-                          right: 2,
-                          top: 2,
-                          child: Container(
-                            width: 9,
-                            height: 9,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFEF4444),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          tooltip: 'Logout',
+                          onPressed: () {
+                            context.read<AuthProvider>().logout();
+                            context.go('/login');
+                          },
                         ),
                       ],
                     ),
@@ -642,140 +686,6 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  /// Custom Bottom Navigation Bar matching the 4 tabs (Home, Incoming, Sync, Profile)
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                index: 0,
-                icon: Icons.home_rounded,
-                label: 'Home',
-                showDot: true,
-              ),
-              _buildNavItem(
-                index: 1,
-                icon: Icons.move_to_inbox_outlined,
-                label: 'Incoming',
-              ),
-              _buildNavItem(
-                index: 2,
-                icon: Icons.sync_rounded,
-                label: 'Sync',
-                badgeCount: 4,
-              ),
-              _buildNavItem(
-                index: 3,
-                icon: Icons.person_outline_rounded,
-                label: 'Profile',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required int index,
-    required IconData icon,
-    required String label,
-    bool showDot = false,
-    int? badgeCount,
-  }) {
-    final isSelected = _currentNavIndex == index;
-    final activeColor = AppColors.primary;
-    final inactiveColor = const Color(0xFF64748B);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        setState(() {
-          _currentNavIndex = index;
-        });
-      },
-      child: SizedBox(
-        width: 68,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  icon,
-                  size: 24,
-                  color: isSelected ? activeColor : inactiveColor,
-                ),
-                if (badgeCount != null)
-                  Positioned(
-                    right: -8,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2563EB),
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '$badgeCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? activeColor : inactiveColor,
-              ),
-            ),
-            const SizedBox(height: 2),
-            if (isSelected && showDot)
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: activeColor,
-                  shape: BoxShape.circle,
-                ),
-              )
-            else
-              const SizedBox(height: 5),
-          ],
         ),
       ),
     );

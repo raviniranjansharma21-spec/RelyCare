@@ -47,7 +47,7 @@ class ReferralDetailsScreen extends StatelessWidget {
 
             // Patient Demographic Card
             if (currentReferral.patient != null) ...[
-              const Text('Patient Information', style: AppTextStyles.heading3),
+              Text('Patient Information', style: AppTextStyles.heading3),
               const SizedBox(height: 8),
               PatientInfoCard(patient: currentReferral.patient!),
               const SizedBox(height: 16),
@@ -60,7 +60,7 @@ class ReferralDetailsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Referral Reason & Notes', style: AppTextStyles.heading3),
+                    Text('Referral Reason & Notes', style: AppTextStyles.heading3),
                     const Divider(),
                     const SizedBox(height: 8),
                     Text(currentReferral.referralReason, style: AppTextStyles.bodyLarge),
@@ -76,7 +76,7 @@ class ReferralDetailsScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Status Update Actions for Receiving Hospital
-            const Text('Update Referral Journey', style: AppTextStyles.heading2),
+            Text('Update Referral Journey', style: AppTextStyles.heading2),
             const SizedBox(height: 12),
             PrimaryButton(
               label: 'Mark Patient Arrived',

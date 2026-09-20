@@ -102,7 +102,7 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Offline Queue', style: AppTextStyles.heading3),
+                    Text('Offline Queue', style: AppTextStyles.heading3),
                     const SizedBox(height: 8),
                     Text(
                       '$_pendingCount referrals waiting for upload',
