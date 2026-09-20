@@ -26,30 +26,43 @@ This checklist tracks tasks across the 8 project phases.
 - [ ] Create sync state transitions (`CREATED` → `QUEUED` → `SYNCED`)
 - [ ] Build UI sync status indicator and offline banners
 
-### Phase 4: Backend Integration & FastAPI
-- [ ] Implement FastAPI endpoints for referral ingestion and status polling
-- [ ] Setup PostgreSQL database schema on backend
-- [ ] Implement `ApiService` HTTP REST client calls
-- [ ] Connect `SyncService` to upload queued referrals when online
+### Phase 7: FastAPI Backend Foundation & REST API
+- [x] Create dedicated `backend/` directory with clean layered architecture
+- [x] Implement FastAPI endpoints for referral ingestion (`POST /api/v1/referrals`), status updates (`PATCH /api/v1/referrals/{id}/status`), and retrieval (`GET /api/v1/referrals/{id}`)
+- [x] Implement PostgreSQL database schema with SQLAlchemy `ReferralModel`
+- [x] Implement Pydantic validation schemas (`ReferralCreate`, `ReferralResponse`, `ReferralStatusUpdate`)
+- [x] Handle duplicate referrals with `409 Conflict`
+- [x] Sanitize error handling to prevent credential leaks on 500 errors
+- [x] Write backend unit/integration tests (`test_health.py`, `test_referrals.py`) passing with pytest
 
-### Phase 5: SMS Fallback Prototype
-- [ ] Implement minimal token encoder/decoder in `SmsService`
-- [ ] Add SMS transmission simulation/gateway hook
-- [ ] Validate that zero plain clinical text is included in SMS payloads
 
-### Phase 6: Identity Matching & Human Verification
+### Phase 5: Sync Failure & Retry Strategy
+- [x] Implement exponential backoff & jitter calculation (`ExponentialBackoffCalculator`)
+- [x] Implement retry attempt tracking and `nextRetryAt` scheduling in `SyncQueueDao`
+- [x] Distinguish between transient errors (`SocketException`, `TimeoutException`) and permanent errors (4xx client errors)
+- [x] Add automated scheduled retry loop for pending sync queue items
+- [x] Provide manual retry trigger (`syncNow` / `retryFailed`)
+- [x] Comprehensive unit & integration testing for sync failure and retry
+
+### Phase 6: SMS Fallback for Offline Referrals
+- [x] Define `SmsService` abstract interface and `SmsResult` result model
+- [x] Implement `MockSmsService` gateway simulation with configurable failure hooks
+- [x] Enforce Minimum-Data Principle with deterministic format (`REF`, `PHC`, `PAT`, `AGE`, `DST`)
+- [x] Sanitize patient names (first name + initial) to prevent privacy leaks
+- [x] Implement SMS fallback in `ReferralRepository` & `ReferralProvider`
+- [x] Add duplicate protection in SQLite event log (`SMS_SENT`)
+- [x] Support manual retry with `forceRetry` without affecting HTTP `syncStatus`
+- [x] Unit test suite (`test/phase6_sms_fallback_test.dart`) verifying all fallback and isolation rules
+
+### Phase 7: Identity Matching & Human Verification
 - [ ] Implement fuzzy matching algorithms (Levenshtein / RapidFuzz) in `MatchingService`
 - [ ] Build multi-factor confidence scoring (Name, Age, Gender, Village)
 - [ ] Implement UI match comparison view with confidence badges
 - [ ] Add explicit human verification dialog and confirmation flow
 
-### Phase 7: Referral Tracking & Dashboard Polish
+### Phase 8: Referral Tracking & Dashboard Polish
 - [ ] Build timeline view in `ReferralDetailsScreen`
 - [ ] Implement referral status transitions (`PATIENT_ARRIVED`, `UNDER_TREATMENT`, `COMPLETED`)
 - [ ] Polish dashboard analytics metrics and filters
 - [ ] Add demo synthetic data generator for testing
 
-### Phase 8: Security, Testing & Demo Readiness
-- [ ] Audit local data storage for privacy compliance
-- [ ] Run end-to-end simulation (Offline referral creation → SMS fallback → Online sync → Matching → Acceptance)
-- [ ] Final UI/UX polish for hackathon presentation

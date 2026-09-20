@@ -5,15 +5,14 @@ import '../services/matching/matching_service.dart';
 
 /// State management for patient identity matching and human verification.
 class IdentityMatchingProvider extends ChangeNotifier {
-  final MatchingService _matchingService;
+  final MatchingService matchingService;
 
   List<IdentityMatch> _candidateMatches = [];
   IdentityMatch? _selectedMatch;
   bool _isLoading = false;
   String? _errorMessage;
 
-  IdentityMatchingProvider({required MatchingService matchingService})
-      : _matchingService = matchingService;
+  IdentityMatchingProvider({required this.matchingService});
 
   List<IdentityMatch> get candidateMatches => _candidateMatches;
   IdentityMatch? get selectedMatch => _selectedMatch;
@@ -29,7 +28,7 @@ class IdentityMatchingProvider extends ChangeNotifier {
     try {
       final matches = <IdentityMatch>[];
       for (final candidate in existingPatients) {
-        final match = await _matchingService.matchCandidate(
+        final match = await matchingService.matchCandidate(
           incoming: incomingPatient,
           candidate: candidate,
         );

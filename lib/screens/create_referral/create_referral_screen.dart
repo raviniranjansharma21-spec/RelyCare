@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../models/referral.dart';
 import '../../models/referral_status.dart';
 import '../../widgets/primary_button.dart';
 import '../../core/utils/validators.dart';
+import '../../app/app_dependencies.dart';
 
-/// Screen for PHC clinicians to create and submit a new patient referral.
+/// Screen for PHC clinicians to create and submit a new patient referral offline.
 class CreateReferralScreen extends StatefulWidget {
   const CreateReferralScreen({super.key});
 
@@ -24,9 +26,10 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
   final _contactController = TextEditingController();
 
   // Referral Fields
+  final _sourceFacilityController = TextEditingController(text: 'PHC-Rampur-104');
+  String _destinationFacility = 'District Hospital - Rampur Central';
   final _reasonController = TextEditingController();
   ReferralUrgency _urgency = ReferralUrgency.routine;
-  String _destinationFacility = 'District Hospital - Rampur Central';
   final _notesController = TextEditingController();
 
   bool _isSubmitting = false;
@@ -37,6 +40,7 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
     _ageController.dispose();
     _locationController.dispose();
     _contactController.dispose();
+    _sourceFacilityController.dispose();
     _reasonController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -45,24 +49,147 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
   void _submitReferral() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Prevent double submissions
+    if (_isSubmitting) return;
+
+    final provider = context.referralProvider;
+    if (provider.isCreating) return;
+
     setState(() => _isSubmitting = true);
 
-    // TODO (Frontend / Referral Provider):
-    // 1. Build Patient and Referral entity objects
-    // 2. Dispatch to ReferralProvider.createReferral()
-    // 3. Show local save / sync toast notification
-    await Future.delayed(const Duration(seconds: 1));
+    final age = int.tryParse(_ageController.text.trim()) ?? 0;
 
-    if (mounted) {
-      setState(() => _isSubmitting = false);
+    final createdReferral = await provider.createReferral(
+      patientName: _nameController.text.trim(),
+      patientAge: age,
+      patientGender: _gender,
+      patientPhone: _contactController.text.trim().isNotEmpty
+          ? _contactController.text.trim()
+          : null,
+      patientLocation: _locationController.text.trim(),
+      sourceFacility: _sourceFacilityController.text.trim(),
+      destinationFacility: _destinationFacility,
+      reason: _reasonController.text.trim(),
+      clinicalNotes: _notesController.text.trim().isNotEmpty
+          ? _notesController.text.trim()
+          : null,
+    );
+
+    if (!mounted) return;
+
+    setState(() => _isSubmitting = false);
+
+    if (createdReferral != null) {
+      _showCreationSuccessDialog(createdReferral);
+    } else {
+      final error = provider.errorMessage ?? 'Failed to create referral locally';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Referral created and saved locally!'),
-          backgroundColor: AppColors.onlineGreen,
+        SnackBar(
+          content: Text(error),
+          backgroundColor: AppColors.urgencyHigh,
         ),
       );
-      Navigator.pop(context);
     }
+  }
+
+  void _showCreationSuccessDialog(Referral referral) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.check_circle_rounded, color: AppColors.onlineGreen, size: 28),
+              SizedBox(width: 10),
+              Text('Referral Saved Offline', style: AppTextStyles.heading2),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'The referral has been securely saved to local SQLite storage and queued for background sync.',
+                  style: AppTextStyles.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Referral ID:', style: AppTextStyles.bodySmall),
+                          Text(
+                            referral.referralToken,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Patient:', style: AppTextStyles.bodySmall),
+                          Text(
+                            referral.patient?.fullName ?? _nameController.text,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text('Local Status:', style: AppTextStyles.bodySmall),
+                          Text('CREATED (Saved Locally)', style: TextStyle(fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text('Sync Queue:', style: AppTextStyles.bodySmall),
+                          Text(
+                            'PENDING (Waiting for network)',
+                            style: TextStyle(
+                              color: AppColors.offlineOrange,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            PrimaryButton(
+              label: 'Done & Return',
+              onPressed: () {
+                Navigator.pop(dialogContext); // Close dialog
+                Navigator.pop(context); // Return from Create Referral screen
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -97,7 +224,7 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _gender,
+                      initialValue: _gender,
                       decoration: const InputDecoration(labelText: 'Gender'),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
@@ -127,25 +254,14 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
               const Text('Referral Details', style: AppTextStyles.heading2),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _reasonController,
-                decoration: const InputDecoration(
-                  labelText: 'Reason for Referral / Chief Complaint *',
-                ),
-                validator: (v) => Validators.validateRequired(v, 'Referral Reason'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<ReferralUrgency>(
-                value: _urgency,
-                decoration: const InputDecoration(labelText: 'Urgency Tier'),
-                items: ReferralUrgency.values.map((u) {
-                  return DropdownMenuItem(value: u, child: Text(u.displayName));
-                }).toList(),
-                onChanged: (v) => setState(() => _urgency = v!),
+                controller: _sourceFacilityController,
+                decoration: const InputDecoration(labelText: 'Source Facility *'),
+                validator: (v) => Validators.validateRequired(v, 'Source Facility'),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _destinationFacility,
-                decoration: const InputDecoration(labelText: 'Destination Facility'),
+                initialValue: _destinationFacility,
+                decoration: const InputDecoration(labelText: 'Destination Facility *'),
                 items: const [
                   DropdownMenuItem(
                     value: 'District Hospital - Rampur Central',
@@ -155,8 +271,29 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
                     value: 'Sub-District Hospital - North',
                     child: Text('Sub-District Hospital - North'),
                   ),
+                  DropdownMenuItem(
+                    value: 'Community Health Centre - East',
+                    child: Text('Community Health Centre - East'),
+                  ),
                 ],
                 onChanged: (v) => setState(() => _destinationFacility = v!),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Reason for Referral / Chief Complaint *',
+                ),
+                validator: (v) => Validators.validateRequired(v, 'Referral Reason'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<ReferralUrgency>(
+                initialValue: _urgency,
+                decoration: const InputDecoration(labelText: 'Urgency Tier'),
+                items: ReferralUrgency.values.map((u) {
+                  return DropdownMenuItem(value: u, child: Text(u.displayName));
+                }).toList(),
+                onChanged: (v) => setState(() => _urgency = v!),
               ),
               const SizedBox(height: 12),
               TextFormField(

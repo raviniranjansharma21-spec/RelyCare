@@ -1,0 +1,159 @@
+import 'package:flutter/material.dart';
+import '../services/local_storage/local_storage_service.dart';
+import '../services/api/api_service.dart';
+import '../services/connectivity/connectivity_service.dart';
+import '../services/sms/sms_service.dart';
+import '../services/matching/matching_service.dart';
+import '../services/sync/sync_service.dart';
+import '../repositories/patient_repository.dart';
+import '../repositories/referral_repository.dart';
+import '../repositories/sync_repository.dart';
+import '../providers/referral_provider.dart';
+import '../providers/connectivity_provider.dart';
+import '../providers/sync_provider.dart';
+import '../providers/identity_matching_provider.dart';
+
+/// Container for all application services, repositories, and state providers.
+class AppDependencies {
+  final LocalStorageService localStorage;
+  final ApiService apiService;
+  final ConnectivityService connectivityService;
+  final SmsService smsService;
+  final MatchingService matchingService;
+
+  final PatientRepository patientRepository;
+  final ReferralRepository referralRepository;
+  final SyncRepository syncRepository;
+
+  final ReferralProvider referralProvider;
+  final ConnectivityProvider connectivityProvider;
+  final SyncProvider syncProvider;
+  final IdentityMatchingProvider identityMatchingProvider;
+
+  factory AppDependencies({
+    LocalStorageService? localStorage,
+    ApiService? apiService,
+    ConnectivityService? connectivityService,
+    SmsService? smsService,
+    MatchingService? matchingService,
+    PatientRepository? patientRepository,
+    ReferralRepository? referralRepository,
+    SyncRepository? syncRepository,
+    ReferralProvider? referralProvider,
+    ConnectivityProvider? connectivityProvider,
+    SyncProvider? syncProvider,
+    IdentityMatchingProvider? identityMatchingProvider,
+  }) {
+    final storage = localStorage ?? LocalStorageServiceImpl();
+    final api = apiService ?? ApiServiceImpl(baseUrl: 'http://localhost:8000/api/v1');
+    final connectivity = connectivityService ?? ConnectivityServiceImpl();
+    final sms = smsService ?? MockSmsService();
+    final matching = matchingService ?? MatchingService();
+
+    final patientRepo = patientRepository ??
+        PatientRepository(
+          localStorage: storage,
+          apiService: api,
+          connectivityService: connectivity,
+        );
+
+    final referralRepo = referralRepository ??
+        ReferralRepository(
+          localStorage: storage,
+          apiService: api,
+          connectivityService: connectivity,
+          smsService: sms,
+        );
+
+    final syncRepo = syncRepository ??
+        SyncRepository(
+          localStorage: storage,
+          syncService: SyncService(
+            localStorage: storage,
+            apiService: api,
+            connectivityService: connectivity,
+          ),
+        );
+
+    final referralProv = referralProvider ??
+        ReferralProvider(
+          referralRepository: referralRepo,
+        );
+
+    final connectivityProv = connectivityProvider ??
+        ConnectivityProvider(
+          connectivityService: connectivity,
+        );
+
+    final syncProv = syncProvider ??
+        SyncProvider(
+          syncRepository: syncRepo,
+          connectivityProvider: connectivityProv,
+        );
+
+    final matchingProv = identityMatchingProvider ??
+        IdentityMatchingProvider(
+          matchingService: matching,
+        );
+
+    return AppDependencies._(
+      localStorage: storage,
+      apiService: api,
+      connectivityService: connectivity,
+      smsService: sms,
+      matchingService: matching,
+      patientRepository: patientRepo,
+      referralRepository: referralRepo,
+      syncRepository: syncRepo,
+      referralProvider: referralProv,
+      connectivityProvider: connectivityProv,
+      syncProvider: syncProv,
+      identityMatchingProvider: matchingProv,
+    );
+  }
+
+  const AppDependencies._({
+    required this.localStorage,
+    required this.apiService,
+    required this.connectivityService,
+    required this.smsService,
+    required this.matchingService,
+    required this.patientRepository,
+    required this.referralRepository,
+    required this.syncRepository,
+    required this.referralProvider,
+    required this.connectivityProvider,
+    required this.syncProvider,
+    required this.identityMatchingProvider,
+  });
+}
+
+/// InheritedWidget providing [AppDependencies] down the widget tree.
+class RelyCareScope extends InheritedWidget {
+  final AppDependencies dependencies;
+
+  const RelyCareScope({
+    super.key,
+    required this.dependencies,
+    required super.child,
+  });
+
+  static AppDependencies of(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<RelyCareScope>();
+    if (scope == null) {
+      throw FlutterError('RelyCareScope was not found in the widget hierarchy.');
+    }
+    return scope.dependencies;
+  }
+
+  @override
+  bool updateShouldNotify(RelyCareScope oldWidget) => dependencies != oldWidget.dependencies;
+}
+
+extension RelyCareContext on BuildContext {
+  AppDependencies get dependencies => RelyCareScope.of(this);
+  ReferralProvider get referralProvider => dependencies.referralProvider;
+  ConnectivityProvider get connectivityProvider => dependencies.connectivityProvider;
+  SyncProvider get syncProvider => dependencies.syncProvider;
+  IdentityMatchingProvider get identityMatchingProvider => dependencies.identityMatchingProvider;
+}

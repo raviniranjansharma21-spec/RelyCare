@@ -1,27 +1,35 @@
 import '../services/local_storage/local_storage_service.dart';
 import '../services/sync/sync_service.dart';
 
-/// Repository responsible for sync queue operations and sync history.
+/// Repository responsible for sync queue operations, retry triggers, and queue metrics.
 class SyncRepository {
-  final LocalStorageService _localStorage;
-  final SyncService _syncService;
+  final LocalStorageService localStorage;
+  final SyncService syncService;
 
   SyncRepository({
-    required LocalStorageService localStorage,
-    required SyncService syncService,
-  })  : _localStorage = localStorage,
-        _syncService = syncService;
+    required this.localStorage,
+    required this.syncService,
+  });
 
-  /// Gets the count of records currently waiting in the offline queue.
+  /// Gets the count of records currently waiting in the offline queue with status PENDING.
   Future<int> getPendingQueueCount() async {
-    final pending = await _localStorage.getPendingSyncReferrals();
+    final pending = await localStorage.getPendingSyncItems();
     return pending.length;
   }
 
-  /// Triggers a manual sync pass.
-  Future<int> triggerSync() async {
-    return await _syncService.syncPendingReferrals();
+  /// Gets the count of records in the offline queue with status FAILED.
+  Future<int> getFailedQueueCount() async {
+    final failed = await localStorage.getFailedSyncItems();
+    return failed.length;
   }
 
-  // TODO: Add methods to inspect sync failures and conflict logs.
+  /// Triggers a synchronization pass for eligible pending/failed queue items.
+  Future<int> triggerSync() async {
+    return await syncService.syncPendingReferrals();
+  }
+
+  /// Triggers a retry pass specifically for retryable failed queue items.
+  Future<int> retryFailed() async {
+    return await syncService.retryFailedItems();
+  }
 }

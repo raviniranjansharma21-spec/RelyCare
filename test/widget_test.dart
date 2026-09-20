@@ -8,5 +8,8 @@ void main() {
 
     // Verify app launches successfully
     expect(find.byType(RelyCareApp), findsOneWidget);
+
+    // Advance past the splash screen delay timer
+    await tester.pumpAndSettle(const Duration(seconds: 3));
   });
 }

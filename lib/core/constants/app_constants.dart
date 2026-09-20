@@ -14,5 +14,6 @@ class AppConstants {
   static const double highConfidenceThreshold = 0.85;
   static const double mediumConfidenceThreshold = 0.60;
 
-  // TODO: Add any additional global constants (e.g. pagination limits, retry counts).
+  // Sync & Retry Policy
+  static const int maxSyncRetries = 3;
 }
