@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 
 /// High-Fidelity Hospital Dashboard Screen for District Hospital Staff.
@@ -611,12 +612,7 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
                           // Review Details Link
                           GestureDetector(
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Opening details for $name...'),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
+                              context.push('/identity-matching');
                             },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
