@@ -13,12 +13,10 @@ class SyncService {
   bool get isSyncing => _isSyncing;
 
   SyncService({
-    required LocalStorageService localStorage,
+    required this._localStorage,
     required ApiService apiService,
-    required ConnectivityService connectivityService,
-  })  : _localStorage = localStorage,
-        _apiService = apiService,
-        _connectivityService = connectivityService;
+    required this._connectivityService,
+  })  : _apiService = apiService;
 
   /// Triggers full synchronization of all pending offline records.
   Future<int> syncPendingReferrals() async {

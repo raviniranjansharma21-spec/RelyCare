@@ -7,10 +7,9 @@ class SyncRepository {
   final SyncService _syncService;
 
   SyncRepository({
-    required LocalStorageService localStorage,
+    required this._localStorage,
     required SyncService syncService,
-  })  : _localStorage = localStorage,
-        _syncService = syncService;
+  })  : _syncService = syncService;
 
   /// Gets the count of records currently waiting in the offline queue.
   Future<int> getPendingQueueCount() async {

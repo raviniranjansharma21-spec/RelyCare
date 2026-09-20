@@ -14,14 +14,11 @@ class ReferralRepository {
   final SmsService _smsService;
 
   ReferralRepository({
-    required LocalStorageService localStorage,
+    required this._localStorage,
     required ApiService apiService,
-    required ConnectivityService connectivityService,
-    required SmsService smsService,
-  })  : _localStorage = localStorage,
-        _apiService = apiService,
-        _connectivityService = connectivityService,
-        _smsService = smsService;
+    required this._connectivityService,
+    required this._smsService,
+  })  : _apiService = apiService;
 
   /// Creates a new referral adhering to the offline-first flow.
   Future<Referral> createReferral(Referral referral) async {

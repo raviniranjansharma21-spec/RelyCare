@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../models/referral.dart';
-import '../../models/referral_status.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/date_utils.dart';

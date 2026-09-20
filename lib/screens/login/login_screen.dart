@@ -36,10 +36,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (mounted && success) {
-      if (authProvider.selectedRole == 'Hospital Staff') {
-        context.go('/hospital-dashboard');
-      } else {
-        context.go('/phc-dashboard');
+      switch (authProvider.selectedRole) {
+        case 'Hospital Staff':
+          context.go('/hospital-dashboard');
+        case 'Patient':
+          context.go('/user-tracking');
+        default: // 'PHC Staff' and any unrecognised role
+          context.go('/phc-dashboard');
       }
     }
   }
@@ -403,13 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             GestureDetector(
                               onTap: () {
-                                authProvider.setSelectedRole('Patient');
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Referral tracking will be available soon.'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
+                                context.push('/user-tracking');
                               },
                               child: Text(
                                 'Track your referral here',

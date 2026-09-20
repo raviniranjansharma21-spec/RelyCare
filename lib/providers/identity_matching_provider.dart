@@ -12,8 +12,7 @@ class IdentityMatchingProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  IdentityMatchingProvider({required MatchingService matchingService})
-      : _matchingService = matchingService;
+  IdentityMatchingProvider({required this._matchingService});
 
   List<IdentityMatch> get candidateMatches => _candidateMatches;
   IdentityMatch? get selectedMatch => _selectedMatch;

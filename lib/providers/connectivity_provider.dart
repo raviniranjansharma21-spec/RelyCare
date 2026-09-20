@@ -10,8 +10,7 @@ class ConnectivityProvider extends ChangeNotifier {
   bool _isOnline = true;
   bool get isOnline => _isOnline;
 
-  ConnectivityProvider({required ConnectivityService connectivityService})
-      : _connectivityService = connectivityService {
+  ConnectivityProvider({required this._connectivityService}) {
     _init();
   }
 
@@ -29,7 +28,7 @@ class ConnectivityProvider extends ChangeNotifier {
   void toggleSimulation() {
     _isOnline = !_isOnline;
     if (_connectivityService is ConnectivityServiceImpl) {
-      (_connectivityService as ConnectivityServiceImpl).simulateConnectivityChange(_isOnline);
+      (_connectivityService).simulateConnectivityChange(_isOnline);
     }
     notifyListeners();
   }

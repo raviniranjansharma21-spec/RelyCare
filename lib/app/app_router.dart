@@ -7,6 +7,7 @@ import '../screens/hospital_dashboard/hospital_dashboard_screen.dart';
 import '../screens/create_referral/create_referral_screen.dart';
 import '../screens/identity_matching/identity_matching_screen.dart';
 import '../screens/referral_details/referral_details_screen.dart';
+import '../screens/user_tracking/user_tracking_screen.dart';
 
 /// Centralized GoRouter navigation configuration for RelyCare.
 class AppRouter {
@@ -17,6 +18,7 @@ class AppRouter {
   static const String createReferral = '/create-referral';
   static const String identityMatching = '/identity-matching';
   static const String referralDetails = '/referral-details';
+  static const String userTracking = '/user-tracking';
 
   static final GoRouter router = GoRouter(
     initialLocation: login,
@@ -68,6 +70,13 @@ class AppRouter {
         name: 'referralDetails',
         builder: (BuildContext context, GoRouterState state) {
           return const ReferralDetailsScreen();
+        },
+      ),
+      GoRoute(
+        path: userTracking,
+        name: 'userTracking',
+        builder: (BuildContext context, GoRouterState state) {
+          return const UserTrackingScreen();
         },
       ),
     ],

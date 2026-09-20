@@ -10,7 +10,7 @@ class SyncProvider extends ChangeNotifier {
   String? _lastSyncTime;
   String? _syncError;
 
-  SyncProvider({required SyncRepository syncRepository}) : _syncRepository = syncRepository;
+  SyncProvider({required this._syncRepository});
 
   int get pendingCount => _pendingCount;
   bool get isSyncing => _isSyncing;

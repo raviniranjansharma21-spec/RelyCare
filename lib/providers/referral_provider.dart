@@ -12,8 +12,7 @@ class ReferralProvider extends ChangeNotifier {
   String? _errorMessage;
   Referral? _selectedReferral;
 
-  ReferralProvider({required ReferralRepository referralRepository})
-      : _referralRepository = referralRepository;
+  ReferralProvider({required this._referralRepository});
 
   List<Referral> get referrals => _referrals;
   bool get isLoading => _isLoading;

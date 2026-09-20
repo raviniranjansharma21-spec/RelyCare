@@ -10,12 +10,10 @@ class PatientRepository {
   final ConnectivityService _connectivityService;
 
   PatientRepository({
-    required LocalStorageService localStorage,
+    required this._localStorage,
     required ApiService apiService,
-    required ConnectivityService connectivityService,
-  })  : _localStorage = localStorage,
-        _apiService = apiService,
-        _connectivityService = connectivityService;
+    required this._connectivityService,
+  })  : _apiService = apiService;
 
   /// Saves or creates a patient in the local database first.
   Future<void> savePatient(Patient patient) async {
