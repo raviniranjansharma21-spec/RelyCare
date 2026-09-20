@@ -612,7 +612,7 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
                           // Review Details Link
                           GestureDetector(
                             onTap: () {
-                              context.push('/identity-matching');
+                              context.push('/referral-details');
                             },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
