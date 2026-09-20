@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../screens/login/login_screen.dart';
-import '../screens/dashboard/phc_dashboard_screen.dart';
+import '../screens/phc_dashboard/phc_dashboard_screen.dart';
 
 /// Centralized GoRouter navigation configuration for RelyCare.
 class AppRouter {
