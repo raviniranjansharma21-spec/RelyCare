@@ -76,9 +76,9 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
                   children: [
                     Icon(Icons.assignment_outlined, size: 64, color: Colors.grey.shade400),
                     const SizedBox(height: 16),
-                    const Text('No Referrals Found', style: AppTextStyles.heading2),
+                    Text('No Referrals Found', style: AppTextStyles.heading2),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'No local referrals saved yet. Tap the button below to create your first offline referral.',
                       style: AppTextStyles.bodyMedium,
                       textAlign: TextAlign.center,

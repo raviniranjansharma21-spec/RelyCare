@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../models/patient.dart';
 import '../services/local_storage/local_storage_service.dart';
 import '../services/api/api_service.dart';

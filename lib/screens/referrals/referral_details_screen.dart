@@ -51,7 +51,7 @@ class ReferralDetailsScreen extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Referral Token', style: AppTextStyles.bodySmall),
+                            Text('Referral Token', style: AppTextStyles.bodySmall),
                             const SizedBox(height: 2),
                             Text(
                               currentReferral.referralToken,
@@ -98,14 +98,14 @@ class ReferralDetailsScreen extends StatelessWidget {
 
             // Patient Demographic Card
             if (currentReferral.patient != null) ...[
-              const Text('Patient Information', style: AppTextStyles.heading2),
+              Text('Patient Information', style: AppTextStyles.heading2),
               const SizedBox(height: 8),
               PatientInfoCard(patient: currentReferral.patient!),
               const SizedBox(height: 16),
             ],
 
             // Facility Routing Info
-            const Text('Facility Routing', style: AppTextStyles.heading2),
+            Text('Facility Routing', style: AppTextStyles.heading2),
             const SizedBox(height: 8),
             Card(
               child: Padding(
@@ -120,7 +120,7 @@ class ReferralDetailsScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Source Facility', style: AppTextStyles.bodySmall),
+                              Text('Source Facility', style: AppTextStyles.bodySmall),
                               Text(currentReferral.sourceFacilityId, style: AppTextStyles.heading3),
                             ],
                           ),
@@ -136,7 +136,7 @@ class ReferralDetailsScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Destination Facility', style: AppTextStyles.bodySmall),
+                              Text('Destination Facility', style: AppTextStyles.bodySmall),
                               Text(currentReferral.destinationFacilityId, style: AppTextStyles.heading3),
                             ],
                           ),
@@ -150,7 +150,7 @@ class ReferralDetailsScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Clinical Summary & Reason
-            const Text('Clinical Summary', style: AppTextStyles.heading2),
+            Text('Clinical Summary', style: AppTextStyles.heading2),
             const SizedBox(height: 8),
             Card(
               child: Padding(
@@ -158,13 +158,13 @@ class ReferralDetailsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Chief Complaint / Reason for Referral', style: AppTextStyles.bodySmall),
+                    Text('Chief Complaint / Reason for Referral', style: AppTextStyles.bodySmall),
                     const SizedBox(height: 4),
                     Text(currentReferral.referralReason, style: AppTextStyles.bodyLarge),
                     if (currentReferral.clinicalNotesSummary != null &&
                         currentReferral.clinicalNotesSummary!.isNotEmpty) ...[
                       const Divider(height: 20),
-                      const Text('Clinical Notes', style: AppTextStyles.bodySmall),
+                      Text('Clinical Notes', style: AppTextStyles.bodySmall),
                       const SizedBox(height: 4),
                       Text(currentReferral.clinicalNotesSummary!, style: AppTextStyles.bodyMedium),
                     ],
@@ -175,7 +175,7 @@ class ReferralDetailsScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Referral Timeline / Event History (from SQLite)
-            const Text('Referral Timeline & Events', style: AppTextStyles.heading2),
+            Text('Referral Timeline & Events', style: AppTextStyles.heading2),
             const SizedBox(height: 8),
             FutureBuilder<List<ReferralEventData>>(
               future: provider.getReferralEvents(currentReferral.referralToken),
@@ -189,9 +189,9 @@ class ReferralDetailsScreen extends StatelessWidget {
 
                 final events = snapshot.data ?? [];
                 if (events.isEmpty) {
-                  return const Card(
+                  return Card(
                     child: Padding(
-                      padding: EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(16.0),
                       child: Text('No timeline events recorded yet.', style: AppTextStyles.bodyMedium),
                     ),
                   );
@@ -229,7 +229,8 @@ class ReferralDetailsScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Status Update Actions
-            const Text('Update Referral Journey', style: AppTextStyles.heading2),
+            Text('Update Referral Journey', style: AppTextStyles.heading2),
+
             const SizedBox(height: 12),
             PrimaryButton(
               label: 'Mark Patient Arrived',

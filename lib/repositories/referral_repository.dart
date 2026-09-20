@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../models/referral.dart';
 import '../models/referral_status.dart';
 import '../services/local_storage/local_storage_service.dart';

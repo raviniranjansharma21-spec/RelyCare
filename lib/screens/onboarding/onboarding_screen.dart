@@ -24,13 +24,13 @@ class OnboardingScreen extends StatelessWidget {
                 color: AppColors.primary,
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Seamless Referrals, Even Offline',
                 style: AppTextStyles.heading1,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Create and track patient referrals with zero paper loss. Automatically queues referrals when offline and synchronizes when connected.',
                 style: AppTextStyles.bodyLarge,
                 textAlign: TextAlign.center,

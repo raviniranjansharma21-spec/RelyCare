@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../local_storage/local_storage_service.dart';
 import '../local_storage/app_database.dart';
 import '../api/api_service.dart';
@@ -14,6 +15,7 @@ class SyncService {
   final int maxRetries;
 
   bool _isSyncing = false;
+
   bool get isSyncing => _isSyncing;
 
   SyncService({
@@ -59,6 +61,7 @@ class SyncService {
     } finally {
       _isSyncing = false;
     }
+
   }
 
   /// Manually retries only failed queue items that have not exceeded [maxRetries].

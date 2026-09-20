@@ -1,4 +1,4 @@
-/// Custom Exception Hierarchy for RelayCare.
+/// Custom Exception Hierarchy for RelyCare.
 abstract class AppException implements Exception {
   final String message;
   final String? code;

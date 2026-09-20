@@ -93,6 +93,7 @@ class MockSmsService implements SmsService {
   final List<String> sentRecipients = [];
 
   @override
+
   String generateSmsPayload(Referral referral) {
     final patient = referral.patient;
     final sanitizedName = _sanitizePatientName(patient?.fullName);

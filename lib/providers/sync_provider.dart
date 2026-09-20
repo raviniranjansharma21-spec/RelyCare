@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/material.dart';
 import '../repositories/sync_repository.dart';
 import '../providers/connectivity_provider.dart';
@@ -23,6 +24,7 @@ class SyncProvider extends ChangeNotifier {
   }) {
     _init();
   }
+
 
   int get pendingCount => _pendingCount;
   int get failedCount => _failedCount;
