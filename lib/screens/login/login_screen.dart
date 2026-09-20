@@ -36,7 +36,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (mounted && success) {
-      context.go('/phc-dashboard');
+      if (authProvider.selectedRole == 'Hospital Staff') {
+        context.go('/hospital-dashboard');
+      } else {
+        context.go('/phc-dashboard');
+      }
     }
   }
 
