@@ -1,4 +1,4 @@
-/// Custom Exception Hierarchy for RelayCare.
+/// Custom Exception Hierarchy for RelyCare.
 abstract class AppException implements Exception {
   final String message;
   final String? code;
@@ -17,7 +17,7 @@ class StorageException extends AppException {
 /// Thrown when network/FastAPI backend calls fail.
 class NetworkException extends AppException {
   final int? statusCode;
-  const NetworkException(super.message, {super.code, this.statusCode});
+  const NetworkException(super.message, [super.code, this.statusCode]);
 }
 
 /// Thrown when offline synchronization operations encounter errors.
@@ -34,5 +34,3 @@ class SmsException extends AppException {
 class MatchingException extends AppException {
   const MatchingException(super.message, [super.code]);
 }
-
-// TODO: Add any specific AuthException or ValidationException as needed.
