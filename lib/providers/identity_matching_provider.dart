@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/material.dart';
 import '../models/patient.dart';
 import '../models/identity_match.dart';
@@ -12,7 +13,8 @@ class IdentityMatchingProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  IdentityMatchingProvider({required this._matchingService});
+  IdentityMatchingProvider({required MatchingService matchingService})
+      : _matchingService = matchingService;
 
   List<IdentityMatch> get candidateMatches => _candidateMatches;
   IdentityMatch? get selectedMatch => _selectedMatch;

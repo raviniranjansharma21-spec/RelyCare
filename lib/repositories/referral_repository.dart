@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../models/referral.dart';
 import '../models/referral_status.dart';
 import '../services/local_storage/local_storage_service.dart';
@@ -14,11 +15,14 @@ class ReferralRepository {
   final SmsService _smsService;
 
   ReferralRepository({
-    required this._localStorage,
-    required this._apiService,
-    required this._connectivityService,
-    required this._smsService,
-  });
+    required LocalStorageService localStorage,
+    required ApiService apiService,
+    required ConnectivityService connectivityService,
+    required SmsService smsService,
+  })  : _localStorage = localStorage,
+        _apiService = apiService,
+        _connectivityService = connectivityService,
+        _smsService = smsService;
 
   /// Creates a new referral adhering to the offline-first flow.
   Future<Referral> createReferral(Referral referral) async {

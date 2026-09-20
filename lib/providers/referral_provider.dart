@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/material.dart';
 import '../models/referral.dart';
 import '../models/referral_status.dart';
@@ -12,7 +13,8 @@ class ReferralProvider extends ChangeNotifier {
   String? _errorMessage;
   Referral? _selectedReferral;
 
-  ReferralProvider({required this._referralRepository});
+  ReferralProvider({required ReferralRepository referralRepository})
+      : _referralRepository = referralRepository;
 
   List<Referral> get referrals => _referrals;
   bool get isLoading => _isLoading;

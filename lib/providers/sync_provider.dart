@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/material.dart';
 import '../repositories/sync_repository.dart';
 
@@ -10,7 +11,8 @@ class SyncProvider extends ChangeNotifier {
   String? _lastSyncTime;
   String? _syncError;
 
-  SyncProvider({required this._syncRepository});
+  SyncProvider({required SyncRepository syncRepository})
+      : _syncRepository = syncRepository;
 
   int get pendingCount => _pendingCount;
   bool get isSyncing => _isSyncing;

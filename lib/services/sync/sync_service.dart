@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../local_storage/local_storage_service.dart';
 import '../api/api_service.dart';
 import '../connectivity/connectivity_service.dart';
@@ -15,10 +16,12 @@ class SyncService {
   bool get isSyncing => _isSyncing;
 
   SyncService({
-    required this._localStorage,
-    required this._apiService,
-    required this._connectivityService,
-  });
+    required LocalStorageService localStorage,
+    required ApiService apiService,
+    required ConnectivityService connectivityService,
+  })  : _localStorage = localStorage,
+        _apiService = apiService,
+        _connectivityService = connectivityService;
 
   /// Triggers full synchronization of all pending offline records.
   Future<int> syncPendingReferrals() async {

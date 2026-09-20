@@ -5,6 +5,7 @@ import '../screens/login/login_screen.dart';
 import '../screens/phc_dashboard/phc_dashboard_screen.dart';
 import '../screens/hospital_dashboard/hospital_dashboard_screen.dart';
 import '../screens/create_referral/create_referral_screen.dart';
+import '../screens/create_referral/create_referral_step2_screen.dart';
 import '../screens/identity_matching/identity_matching_screen.dart';
 import '../screens/referral_details/referral_details_screen.dart';
 import '../screens/user_tracking/user_tracking_screen.dart';
@@ -17,6 +18,7 @@ class AppRouter {
   static const String hospitalDashboard = '/hospital-dashboard';
   static const String dashboard = '/dashboard';
   static const String createReferral = '/create-referral';
+  static const String createReferralStep2 = '/create-referral-step2';
   static const String identityMatching = '/identity-matching';
   static const String referralDetails = '/referral-details';
   static const String userTracking = '/user-tracking';
@@ -48,6 +50,39 @@ class AppRouter {
               return userTracking;
             default:
               return phcDashboard;
+          }
+        }
+
+        // Note: selectedRole is used for UX routing only, not as a production security boundary.
+        if (isAuthenticated && !isPublic) {
+          final role = authProvider.currentRole;
+          final path = state.matchedLocation;
+
+          if (role == UserRole.patient && path != userTracking) {
+            return userTracking;
+          }
+
+          if (role == UserRole.hospitalStaff) {
+            final allowedHospitalRoutes = {
+              hospitalDashboard,
+              identityMatching,
+              referralDetails,
+            };
+            if (!allowedHospitalRoutes.contains(path)) {
+              return hospitalDashboard;
+            }
+          }
+
+          if (role == UserRole.phcStaff) {
+            final allowedPhcRoutes = {
+              phcDashboard,
+              dashboard,
+              createReferral,
+              createReferralStep2,
+            };
+            if (!allowedPhcRoutes.contains(path)) {
+              return phcDashboard;
+            }
           }
         }
 
@@ -88,6 +123,14 @@ class AppRouter {
           name: 'createReferral',
           builder: (BuildContext context, GoRouterState state) {
             return const CreateReferralScreen();
+          },
+        ),
+        GoRoute(
+          path: createReferralStep2,
+          name: 'createReferralStep2',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            return CreateReferralStep2Screen(patientData: extra);
           },
         ),
         GoRoute(

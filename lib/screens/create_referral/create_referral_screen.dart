@@ -41,11 +41,16 @@ class _CreateReferralScreenState extends State<CreateReferralScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Proceeding to Step 2: Referral Details...'),
-        duration: Duration(seconds: 2),
-      ),
+    // Pass the collected patient data as extra to step 2
+    context.push(
+      '/create-referral-step2',
+      extra: {
+        'name': _nameController.text.trim(),
+        'age': _ageController.text.trim(),
+        'gender': _selectedGender,
+        'phone': _phoneController.text.trim(),
+        'location': _locationController.text.trim(),
+      },
     );
   }
 

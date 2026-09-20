@@ -22,6 +22,21 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Read the saved email/phone without listening to changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.emailOrPhone.isNotEmpty) {
+        _emailPhoneController.text = authProvider.emailOrPhone;
+        setState(() {
+          _rememberMe = true;
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _emailPhoneController.dispose();
     _passwordController.dispose();

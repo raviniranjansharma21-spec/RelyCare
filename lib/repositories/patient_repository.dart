@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../models/patient.dart';
 import '../services/local_storage/local_storage_service.dart';
 import '../services/api/api_service.dart';
@@ -12,10 +13,12 @@ class PatientRepository {
   ApiService get apiService => _apiService;
 
   PatientRepository({
-    required this._localStorage,
-    required this._apiService,
-    required this._connectivityService,
-  });
+    required LocalStorageService localStorage,
+    required ApiService apiService,
+    required ConnectivityService connectivityService,
+  })  : _localStorage = localStorage,
+        _apiService = apiService,
+        _connectivityService = connectivityService;
 
   /// Saves or creates a patient in the local database first.
   Future<void> savePatient(Patient patient) async {

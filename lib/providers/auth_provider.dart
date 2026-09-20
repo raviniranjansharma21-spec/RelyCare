@@ -39,7 +39,7 @@ class AuthProvider extends ChangeNotifier {
   // Getters
   String get selectedRole => _selectedRole;
   UserRole get currentRole => UserRole.fromString(_selectedRole);
-  String get emailOrPhone => _emailOrPhone;
+  String get emailOrPhone => _rememberMe ? _emailOrPhone : '';
   bool get rememberMe => _rememberMe;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
@@ -55,6 +55,9 @@ class AuthProvider extends ChangeNotifier {
   /// Sets the remember me preference
   void setRememberMe(bool value) {
     _rememberMe = value;
+    if (!value) {
+      _emailOrPhone = '';
+    }
     notifyListeners();
   }
 

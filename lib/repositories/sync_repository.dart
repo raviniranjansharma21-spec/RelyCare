@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../services/local_storage/local_storage_service.dart';
 import '../services/sync/sync_service.dart';
 
@@ -7,9 +8,10 @@ class SyncRepository {
   final SyncService _syncService;
 
   SyncRepository({
-    required this._localStorage,
-    required this._syncService,
-  });
+    required LocalStorageService localStorage,
+    required SyncService syncService,
+  })  : _localStorage = localStorage,
+        _syncService = syncService;
 
   /// Gets the count of records currently waiting in the offline queue.
   Future<int> getPendingQueueCount() async {
