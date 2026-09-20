@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/connectivity/connectivity_service.dart';
@@ -29,7 +30,7 @@ class ConnectivityProvider extends ChangeNotifier {
   void toggleSimulation() {
     _isOnline = !_isOnline;
     if (_connectivityService is ConnectivityServiceImpl) {
-      (_connectivityService as ConnectivityServiceImpl).simulateConnectivityChange(_isOnline);
+      (_connectivityService).simulateConnectivityChange(_isOnline);
     }
     notifyListeners();
   }

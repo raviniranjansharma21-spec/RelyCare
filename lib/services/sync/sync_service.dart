@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../local_storage/local_storage_service.dart';
 import '../api/api_service.dart';
 import '../connectivity/connectivity_service.dart';
@@ -8,6 +9,8 @@ class SyncService {
   final LocalStorageService _localStorage;
   final ApiService _apiService;
   final ConnectivityService _connectivityService;
+
+  ApiService get apiService => _apiService;
 
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
@@ -40,7 +43,7 @@ class SyncService {
       final pendingReferrals = await _localStorage.getPendingSyncReferrals();
       AppLogger.info('Found ${pendingReferrals.length} pending referrals to sync', 'SyncService');
 
-      for (final referral in pendingReferrals) {
+      for (final _ in pendingReferrals) {
         // TODO (Sync Specialist): Call API to upload referral, then update local sync state
         // await _apiService.uploadReferral(referral);
         // await _localStorage.updateReferralSyncState(referral.id, SyncState.synced);

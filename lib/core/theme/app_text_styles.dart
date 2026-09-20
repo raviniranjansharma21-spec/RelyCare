@@ -1,63 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Typography definitions for RelayCare.
+/// Typography definitions for RelyCare using GoogleFonts Inter.
 class AppTextStyles {
   // Headings
-  static const TextStyle heading1 = TextStyle(
+  static TextStyle heading1 = GoogleFonts.inter(
     fontSize: 24,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: -0.5,
   );
 
-  static const TextStyle heading2 = TextStyle(
+  static TextStyle heading2 = GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     letterSpacing: -0.3,
   );
 
-  static const TextStyle heading3 = TextStyle(
+  static TextStyle heading3 = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
   // Body Text
-  static const TextStyle bodyLarge = TextStyle(
+  static TextStyle bodyLarge = GoogleFonts.inter(
     fontSize: 16,
-    fontWeight: FontWeight.normal,
+    fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.4,
   );
 
-  static const TextStyle bodyMedium = TextStyle(
+  static TextStyle bodyMedium = GoogleFonts.inter(
     fontSize: 14,
-    fontWeight: FontWeight.normal,
+    fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
     height: 1.4,
   );
 
-  static const TextStyle bodySmall = TextStyle(
+  static TextStyle bodySmall = GoogleFonts.inter(
     fontSize: 12,
-    fontWeight: FontWeight.normal,
+    fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
   );
 
   // Specific Elements
-  static const TextStyle buttonText = TextStyle(
-    fontSize: 15,
+  static TextStyle buttonText = GoogleFonts.inter(
+    fontSize: 16,
     fontWeight: FontWeight.w600,
     color: Colors.white,
     letterSpacing: 0.2,
   );
 
-  static const TextStyle caption = TextStyle(
-    fontSize: 11,
+  static TextStyle caption = GoogleFonts.inter(
+    fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: AppColors.textDisabled,
+    color: AppColors.textMuted,
   );
 
-  // TODO: Add custom Google Fonts or local font families if requested.
+  static TextStyle label = GoogleFonts.inter(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
 }

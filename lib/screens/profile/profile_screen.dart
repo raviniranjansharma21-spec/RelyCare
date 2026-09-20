@@ -21,8 +21,8 @@ class ProfileScreen extends StatelessWidget {
               child: Icon(Icons.person, size: 40, color: Colors.white),
             ),
             const SizedBox(height: 12),
-            const Text('Dr. Ananya Sharma', style: AppTextStyles.heading2),
-            const Text('Medical Officer • Rampur PHC', style: AppTextStyles.bodyMedium),
+            Text('Dr. Ananya Sharma', style: AppTextStyles.heading2),
+            Text('Medical Officer • Rampur PHC', style: AppTextStyles.bodyMedium),
             const SizedBox(height: 24),
 
             Card(

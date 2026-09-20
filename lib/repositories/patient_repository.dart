@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import '../models/patient.dart';
 import '../services/local_storage/local_storage_service.dart';
 import '../services/api/api_service.dart';
@@ -8,6 +9,8 @@ class PatientRepository {
   final LocalStorageService _localStorage;
   final ApiService _apiService;
   final ConnectivityService _connectivityService;
+
+  ApiService get apiService => _apiService;
 
   PatientRepository({
     required LocalStorageService localStorage,

@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/material.dart';
 import '../models/patient.dart';
 import '../models/identity_match.dart';
