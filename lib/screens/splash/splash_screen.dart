@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../app/routes.dart';
+import 'package:go_router/go_router.dart';
 
 /// Initial boot and splash screen for RelyCare.
 class SplashScreen extends StatefulWidget {
@@ -22,8 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Simulated splash delay
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
-      // TODO (Frontend): Check auth / first launch status and navigate accordingly
-      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      context.go('/dashboard');
     }
   }
 

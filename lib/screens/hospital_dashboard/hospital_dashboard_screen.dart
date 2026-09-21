@@ -18,7 +18,7 @@ class HospitalDashboardScreen extends StatefulWidget {
 }
 
 class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
-  int _currentNavIndex = 0;
+  final int _currentNavIndex = 0;
   bool _isOnline = true;
 
   final List<BottomNavItem> _navItems = const [
@@ -133,12 +133,7 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Navigating to All Incoming Referrals...'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      context.push('/identity-matching');
                     },
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -209,9 +204,21 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
         activeColor: AppColors.primary,
         inactiveColor: const Color(0xFF64748B),
         onTap: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
+          if (index == _currentNavIndex) return;
+          switch (index) {
+            case 0:
+              context.go('/hospital-dashboard');
+              break;
+            case 1:
+              context.go('/identity-matching');
+              break;
+            case 2:
+              context.go('/sync-status');
+              break;
+            case 3:
+              context.go('/profile');
+              break;
+          }
         },
       ),
     );

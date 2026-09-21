@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/primary_button.dart';
-import '../../app/routes.dart';
 
 /// Onboarding screen explaining the offline referral and matching workflow.
 class OnboardingScreen extends StatelessWidget {
@@ -39,8 +39,7 @@ class OnboardingScreen extends StatelessWidget {
               PrimaryButton(
                 label: 'Get Started',
                 onPressed: () {
-                  // TODO (Frontend): Set onboarding completed flag
-                  Navigator.pushReplacementNamed(context, AppRoutes.login);
+                  context.go('/login');
                 },
               ),
             ],

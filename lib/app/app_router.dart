@@ -8,6 +8,9 @@ import '../screens/create_referral/create_referral_screen.dart';
 import '../screens/create_referral/create_referral_step2_screen.dart';
 import '../screens/identity_matching/identity_matching_screen.dart';
 import '../screens/referral_details/referral_details_screen.dart';
+import '../screens/referrals/referrals_screen.dart';
+import '../screens/sync/sync_status_screen.dart';
+import '../screens/profile/profile_screen.dart';
 import '../screens/user_tracking/user_tracking_screen.dart';
 import '../providers/auth_provider.dart';
 
@@ -21,6 +24,9 @@ class AppRouter {
   static const String createReferralStep2 = '/create-referral-step2';
   static const String identityMatching = '/identity-matching';
   static const String referralDetails = '/referral-details';
+  static const String referrals = '/referrals';
+  static const String syncStatus = '/sync-status';
+  static const String profile = '/profile';
   static const String userTracking = '/user-tracking';
 
   /// Routes that do NOT require authentication.
@@ -58,7 +64,7 @@ class AppRouter {
           final role = authProvider.currentRole;
           final path = state.matchedLocation;
 
-          if (role == UserRole.patient && path != userTracking) {
+          if (role == UserRole.patient && path != userTracking && path != profile) {
             return userTracking;
           }
 
@@ -67,6 +73,9 @@ class AppRouter {
               hospitalDashboard,
               identityMatching,
               referralDetails,
+              referrals,
+              syncStatus,
+              profile,
             };
             if (!allowedHospitalRoutes.contains(path)) {
               return hospitalDashboard;
@@ -79,6 +88,10 @@ class AppRouter {
               dashboard,
               createReferral,
               createReferralStep2,
+              referrals,
+              referralDetails,
+              syncStatus,
+              profile,
             };
             if (!allowedPhcRoutes.contains(path)) {
               return phcDashboard;
@@ -145,6 +158,27 @@ class AppRouter {
           name: 'referralDetails',
           builder: (BuildContext context, GoRouterState state) {
             return const ReferralDetailsScreen();
+          },
+        ),
+        GoRoute(
+          path: referrals,
+          name: 'referrals',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ReferralsScreen();
+          },
+        ),
+        GoRoute(
+          path: syncStatus,
+          name: 'syncStatus',
+          builder: (BuildContext context, GoRouterState state) {
+            return const SyncStatusScreen();
+          },
+        ),
+        GoRoute(
+          path: profile,
+          name: 'profile',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ProfileScreen();
           },
         ),
         GoRoute(

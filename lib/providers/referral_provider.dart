@@ -17,6 +17,7 @@ class ReferralProvider extends ChangeNotifier {
   String? _errorMessage;
   Referral? _selectedReferral;
   Referral? _lastCreatedReferral;
+  bool _isDisposed = false;
 
   ReferralProvider({required this.referralRepository});
 
@@ -28,19 +29,33 @@ class ReferralProvider extends ChangeNotifier {
   Referral? get selectedReferral => _selectedReferral;
   Referral? get lastCreatedReferral => _lastCreatedReferral;
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   /// Loads all referrals from local SQLite storage.
   Future<void> loadReferrals() async {
+    if (_isDisposed) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _referrals = await referralRepository.getAllReferrals();
+      final list = await referralRepository.getAllReferrals();
+      if (!_isDisposed) {
+        _referrals = list;
+      }
     } catch (e) {
-      _errorMessage = 'Failed to load referrals: $e';
+      if (!_isDisposed) {
+        _errorMessage = 'Failed to load referrals: $e';
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

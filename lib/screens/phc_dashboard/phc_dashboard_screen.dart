@@ -18,7 +18,7 @@ class PHCDashboardScreen extends StatefulWidget {
 }
 
 class _PHCDashboardScreenState extends State<PHCDashboardScreen> {
-  int _currentNavIndex = 0;
+  final int _currentNavIndex = 0;
   bool _isOnline = true;
 
   final List<BottomNavItem> _navItems = const [
@@ -138,12 +138,7 @@ class _PHCDashboardScreenState extends State<PHCDashboardScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Navigating to All Referrals...'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      context.push('/referrals');
                     },
                     child: Text(
                       'View all',
@@ -209,9 +204,21 @@ class _PHCDashboardScreenState extends State<PHCDashboardScreen> {
         activeColor: AppColors.primary,
         inactiveColor: const Color(0xFF64748B),
         onTap: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
+          if (index == _currentNavIndex) return;
+          switch (index) {
+            case 0:
+              context.go('/phc-dashboard');
+              break;
+            case 1:
+              context.go('/referrals');
+              break;
+            case 2:
+              context.go('/sync-status');
+              break;
+            case 3:
+              context.go('/profile');
+              break;
+          }
         },
       ),
     );

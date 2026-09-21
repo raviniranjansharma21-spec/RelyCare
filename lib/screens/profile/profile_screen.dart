@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../app/routes.dart';
+import '../../providers/auth_provider.dart';
 
 /// Screen displaying logged-in facility / staff profile and app configurations.
 class ProfileScreen extends StatelessWidget {
@@ -10,7 +12,26 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Facility & Staff Profile')),
+      appBar: AppBar(
+        title: const Text('Facility & Staff Profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              final role = context.read<AuthProvider>().currentRole;
+              if (role == UserRole.hospitalStaff) {
+                context.go('/hospital-dashboard');
+              } else if (role == UserRole.patient) {
+                context.go('/user-tracking');
+              } else {
+                context.go('/phc-dashboard');
+              }
+            }
+          },
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -56,7 +77,8 @@ class ProfileScreen extends StatelessWidget {
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Switch Facility / Log Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
               onTap: () {
-                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                context.read<AuthProvider>().logout();
+                context.go('/login');
               },
             ),
           ],

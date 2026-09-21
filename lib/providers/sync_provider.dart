@@ -66,14 +66,19 @@ class SyncProvider extends ChangeNotifier {
 
   /// Refreshes the count of pending and failed items in the offline queue.
   Future<void> refreshCounts() async {
+    if (_isDisposed) return;
     try {
-      _pendingCount = await syncRepository.getPendingQueueCount();
-      _failedCount = await syncRepository.getFailedQueueCount();
+      final pending = await syncRepository.getPendingQueueCount();
+      final failed = await syncRepository.getFailedQueueCount();
       if (!_isDisposed) {
+        _pendingCount = pending;
+        _failedCount = failed;
         notifyListeners();
       }
     } catch (e) {
-      AppLogger.warning('Failed to refresh sync queue counts: $e', 'SyncProvider');
+      if (!_isDisposed) {
+        AppLogger.warning('Failed to refresh sync queue counts: $e', 'SyncProvider');
+      }
     }
   }
 
