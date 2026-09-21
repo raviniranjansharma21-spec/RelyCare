@@ -51,7 +51,7 @@ class ProfileScreen extends StatelessWidget {
         details = [
           ListTile(
             leading: const Icon(Icons.phone_android, color: AppColors.primary),
-            title: const Text('Registered Phone'),
+            title: const Text('Registered Email / Phone'),
             subtitle: Text(
               authProvider.emailOrPhone.isNotEmpty
                   ? authProvider.emailOrPhone
