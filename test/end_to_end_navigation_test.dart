@@ -376,7 +376,7 @@ void main() {
     // 5. Test Profile & Logout
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    expect(find.text('Facility & Staff Profile'), findsOneWidget);
+    expect(find.text('Hospital Staff Profile'), findsOneWidget);
 
     await tester.tap(find.text('Switch Facility / Log Out'));
     await tester.pumpAndSettle();

@@ -74,7 +74,7 @@ class ReferralProvider extends ChangeNotifier {
     String? createdByStaff,
   }) async {
     // Prevent duplicate simultaneous submissions
-    if (_isCreating) {
+    if (_isCreating || _isDisposed) {
       return null;
     }
 
@@ -97,16 +97,21 @@ class ReferralProvider extends ChangeNotifier {
         createdByStaff: createdByStaff,
       );
 
-      _referrals.insert(0, newReferral);
-      _lastCreatedReferral = newReferral;
-      _isCreating = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        _referrals.insert(0, newReferral);
+        _lastCreatedReferral = newReferral;
+      }
       return newReferral;
     } catch (e) {
-      _errorMessage = 'Failed to create referral: $e';
-      _isCreating = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        _errorMessage = 'Failed to create referral: $e';
+      }
       return null;
+    } finally {
+      if (!_isDisposed) {
+        _isCreating = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -116,7 +121,7 @@ class ReferralProvider extends ChangeNotifier {
     required String recipientPhoneNumber,
     bool forceRetry = false,
   }) async {
-    if (_isSendingSms) return null;
+    if (_isSendingSms || _isDisposed) return null;
 
     _isSendingSms = true;
     _errorMessage = null;
@@ -130,11 +135,15 @@ class ReferralProvider extends ChangeNotifier {
       );
       return result;
     } catch (e) {
-      _errorMessage = 'SMS fallback failed: $e';
+      if (!_isDisposed) {
+        _errorMessage = 'SMS fallback failed: $e';
+      }
       return null;
     } finally {
-      _isSendingSms = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        _isSendingSms = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -150,16 +159,20 @@ class ReferralProvider extends ChangeNotifier {
 
   /// Updates status of an existing referral.
   Future<void> updateReferralStatus(String id, ReferralStatus newStatus) async {
+    if (_isDisposed) return;
     try {
       await referralRepository.updateStatus(id, newStatus);
       await loadReferrals();
     } catch (e) {
-      _errorMessage = 'Failed to update status: $e';
-      notifyListeners();
+      if (!_isDisposed) {
+        _errorMessage = 'Failed to update status: $e';
+        notifyListeners();
+      }
     }
   }
 
   void selectReferral(Referral referral) {
+    if (_isDisposed) return;
     _selectedReferral = referral;
     notifyListeners();
   }

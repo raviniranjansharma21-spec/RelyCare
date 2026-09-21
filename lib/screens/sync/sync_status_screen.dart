@@ -31,14 +31,24 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
 
     final count = await syncProvider.syncPending();
     if (mounted) {
+      final String message;
+      final Color backgroundColor;
+
+      if (syncProvider.syncError != null) {
+        message = syncProvider.syncError!;
+        backgroundColor = AppColors.urgencyHigh;
+      } else if (!connectivity.isOnline) {
+        message = 'Device is offline. Items remain safely queued.';
+        backgroundColor = AppColors.offlineOrange;
+      } else {
+        message = 'Sync completed! $count referrals processed.';
+        backgroundColor = AppColors.onlineGreen;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            connectivity.isOnline
-                ? 'Sync completed! $count referrals processed.'
-                : 'Device is offline. Items remain safely queued.',
-          ),
-          backgroundColor: connectivity.isOnline ? AppColors.onlineGreen : AppColors.offlineOrange,
+          content: Text(message),
+          backgroundColor: backgroundColor,
         ),
       );
     }
