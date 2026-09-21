@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../widgets/referral_card.dart';
-import '../../app/routes.dart';
 import '../../app/app_dependencies.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -18,7 +18,12 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.referralProvider.loadReferrals();
+      if (mounted) {
+        final provider = context.referralProvider;
+        if (provider.referrals.isEmpty && !provider.isLoading) {
+          provider.loadReferrals();
+        }
+      }
     });
   }
 
@@ -29,6 +34,16 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Local Referrals'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/phc-dashboard');
+            }
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -88,7 +103,7 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
                       icon: const Icon(Icons.add),
                       label: const Text('Create New Referral'),
                       onPressed: () async {
-                        await Navigator.pushNamed(context, AppRoutes.createReferral);
+                        await context.push('/create-referral');
                         if (context.mounted) {
                           context.referralProvider.loadReferrals();
                         }
@@ -111,11 +126,7 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
                   referral: referral,
                   onTap: () {
                     provider.selectReferral(referral);
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.referralDetails,
-                      arguments: referral,
-                    );
+                    context.push('/referral-details');
                   },
                 );
               },
@@ -127,7 +138,7 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
         icon: const Icon(Icons.add),
         label: const Text('New Referral'),
         onPressed: () async {
-          await Navigator.pushNamed(context, AppRoutes.createReferral);
+          await context.push('/create-referral');
           if (context.mounted) {
             context.referralProvider.loadReferrals();
           }

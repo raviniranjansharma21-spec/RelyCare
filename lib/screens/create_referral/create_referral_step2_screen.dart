@@ -313,6 +313,8 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
                   onTap: () {
                     if (context.canPop()) {
                       context.pop();
+                    } else {
+                      context.go('/create-referral');
                     }
                   },
                   child: Container(
@@ -436,7 +438,8 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
     return FormField<String>(
       initialValue: value,
       validator: (val) {
-        if (value == null || value.isEmpty) {
+        final current = val ?? value;
+        if (current == null || current.isEmpty) {
           return 'This field is required';
         }
         return null;
@@ -464,7 +467,7 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
                   Expanded(
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: value,
+                        value: state.value ?? value,
                         hint: Text(
                           hintText,
                           style: GoogleFonts.inter(
@@ -582,8 +585,19 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
         setState(() {
           _currentNavIndex = index;
         });
-        if (index == 0) {
-          context.go('/phc-dashboard');
+        switch (index) {
+          case 0:
+            context.go('/phc-dashboard');
+            break;
+          case 1:
+            context.go('/referrals');
+            break;
+          case 2:
+            context.go('/sync-status');
+            break;
+          case 3:
+            context.go('/profile');
+            break;
         }
       },
       child: SizedBox(

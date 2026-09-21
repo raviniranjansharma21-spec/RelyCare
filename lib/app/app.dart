@@ -41,8 +41,14 @@ class _RelyCareAppState extends State<RelyCareApp> {
 
     return RelyCareScope(
       dependencies: activeDependencies,
-      child: ChangeNotifierProvider.value(
-        value: _authProvider,
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: _authProvider),
+          ChangeNotifierProvider.value(value: activeDependencies.referralProvider),
+          ChangeNotifierProvider.value(value: activeDependencies.connectivityProvider),
+          ChangeNotifierProvider.value(value: activeDependencies.syncProvider),
+          ChangeNotifierProvider.value(value: activeDependencies.identityMatchingProvider),
+        ],
         child: MaterialApp.router(
           title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
