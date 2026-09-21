@@ -17,7 +17,8 @@ class StorageException extends AppException {
 /// Thrown when network/FastAPI backend calls fail.
 class NetworkException extends AppException {
   final int? statusCode;
-  const NetworkException(super.message, {super.code, this.statusCode});
+  const NetworkException(String message, {String? code, this.statusCode})
+      : super(message, code);
 }
 
 /// Thrown when offline synchronization operations encounter errors.
