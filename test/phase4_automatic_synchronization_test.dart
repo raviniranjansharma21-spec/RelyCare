@@ -37,7 +37,10 @@ class FakeApiService implements ApiService {
   }
 
   @override
-  Future<List<Referral>> fetchReferrals() async => [];
+  Future<Referral> getReferral(String referralId) async => throw UnimplementedError();
+
+  @override
+  Future<List<Referral>> fetchReferrals({int skip = 0, int limit = 100, String? status}) async => [];
 
   @override
   Future<void> updateReferralStatus(String referralId, String status) async {}

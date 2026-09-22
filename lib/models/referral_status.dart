@@ -96,4 +96,27 @@ extension ReferralUrgencyExtension on ReferralUrgency {
         return 'Emergency';
     }
   }
+
+  String get code {
+    switch (this) {
+      case ReferralUrgency.routine:
+        return 'ROUTINE';
+      case ReferralUrgency.urgent:
+        return 'URGENT';
+      case ReferralUrgency.emergency:
+        return 'EMERGENCY';
+    }
+  }
+
+  static ReferralUrgency fromString(String value) {
+    switch (value.toUpperCase()) {
+      case 'URGENT':
+        return ReferralUrgency.urgent;
+      case 'EMERGENCY':
+        return ReferralUrgency.emergency;
+      case 'ROUTINE':
+      default:
+        return ReferralUrgency.routine;
+    }
+  }
 }

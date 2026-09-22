@@ -20,6 +20,17 @@ class NetworkException extends AppException {
   const NetworkException(super.message, {super.code, this.statusCode});
 }
 
+/// Thrown when a duplicate referral token is detected by FastAPI (HTTP 409 Conflict).
+class DuplicateReferralException extends NetworkException {
+  final String referralId;
+  const DuplicateReferralException(this.referralId, {String? message})
+      : super(
+          message ?? 'Duplicate referral token detected on server: $referralId',
+          code: 'DUPLICATE_REFERRAL',
+          statusCode: 409,
+        );
+}
+
 /// Thrown when offline synchronization operations encounter errors.
 class SyncException extends AppException {
   const SyncException(super.message, {super.code});

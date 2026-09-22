@@ -38,6 +38,7 @@ abstract class LocalStorageService {
     required String destinationFacility,
     required String reason,
     String? clinicalNotes,
+    String urgency = 'ROUTINE',
     String? customReferralId,
     String status = 'CREATED',
     String syncStatus = 'PENDING',
@@ -51,6 +52,7 @@ abstract class LocalStorageService {
 
   // Referral Operations (Domain Model Level)
   Future<void> saveReferral(Referral referral);
+  Future<Referral> upsertReferralFromSync(Referral referral);
   Future<Referral?> getDomainReferralById(String id);
   Future<List<Referral>> getAllDomainReferrals();
   Future<List<Referral>> getPendingSyncReferrals();
@@ -94,6 +96,7 @@ abstract class LocalStorageService {
     required String destinationFacility,
     required String reason,
     String? clinicalNotes,
+    ReferralUrgency urgency = ReferralUrgency.routine,
     String? customReferralId,
     String? createdByStaff,
   });
@@ -227,6 +230,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
     required String destinationFacility,
     required String reason,
     String? clinicalNotes,
+    String urgency = 'ROUTINE',
     String? customReferralId,
     String status = 'CREATED',
     String syncStatus = 'PENDING',
@@ -240,6 +244,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
       destinationFacility: destinationFacility.trim(),
       reason: reason.trim(),
       clinicalNotes: Value(clinicalNotes?.trim()),
+      urgency: Value(urgency.toUpperCase()),
       status: Value(status),
       syncStatus: Value(syncStatus),
     );
@@ -281,24 +286,122 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   @override
   Future<void> saveReferral(Referral referral) async {
-    final existing = await _db.referralDao.getReferralByReferralId(referral.referralToken);
-    final intPatientId = int.tryParse(referral.patientId) ?? 1;
+    await upsertReferralFromSync(referral);
+  }
 
-    if (existing != null) {
-      await _db.referralDao.updateReferralStatus(referral.referralToken, referral.status.code);
-      await _db.referralDao.updateReferralSyncStatus(referral.referralToken, referral.syncState.name.toUpperCase());
-    } else {
-      await createReferral(
-        patientId: intPatientId,
-        sourceFacility: referral.sourceFacilityId,
-        destinationFacility: referral.destinationFacilityId,
-        reason: referral.referralReason,
-        clinicalNotes: referral.clinicalNotesSummary,
-        customReferralId: referral.referralToken,
-        status: referral.status.code,
-        syncStatus: referral.syncState.name.toUpperCase(),
-      );
-    }
+  @override
+  Future<Referral> upsertReferralFromSync(Referral referral) async {
+    return await _db.transaction(() async {
+      // Step 1: Patient Resolution
+      int resolvedPatientId;
+      final incomingPatient = referral.patient;
+
+      if (incomingPatient != null) {
+        PatientData? matchedPatient;
+
+        // Try exact/normalized phone match first
+        final phone = incomingPatient.contactNumber?.trim();
+        if (phone != null && phone.isNotEmpty) {
+          matchedPatient = await _db.patientDao.findPatientByPhone(phone);
+        }
+
+        // Try deterministic demographic match if no phone match
+        matchedPatient ??= await _db.patientDao.findPatientByDemographics(
+          name: incomingPatient.fullName,
+          age: incomingPatient.age,
+          gender: incomingPatient.gender,
+          location: incomingPatient.villageOrLocation,
+        );
+
+        if (matchedPatient != null) {
+          resolvedPatientId = matchedPatient.id;
+        } else {
+          // Create new local patient
+          final newPatientCompanion = PatientsCompanion.insert(
+            name: incomingPatient.fullName.trim().isNotEmpty ? incomingPatient.fullName.trim() : 'Unknown Patient',
+            age: incomingPatient.age >= 0 ? incomingPatient.age : 0,
+            gender: incomingPatient.gender.trim().isNotEmpty ? incomingPatient.gender.trim() : 'Other',
+            phone: Value(incomingPatient.contactNumber?.trim()),
+            location: Value(incomingPatient.villageOrLocation.trim()),
+          );
+          resolvedPatientId = await _db.patientDao.insertPatient(newPatientCompanion);
+        }
+      } else {
+        // Fallback if referral has no attached patient entity
+        final parsedId = int.tryParse(referral.patientId);
+        if (parsedId != null) {
+          final existing = await _db.patientDao.getPatientById(parsedId);
+          if (existing != null) {
+            resolvedPatientId = existing.id;
+          } else {
+            final newPatientCompanion = PatientsCompanion.insert(
+              name: 'Unknown Patient',
+              age: 0,
+              gender: 'Other',
+            );
+            resolvedPatientId = await _db.patientDao.insertPatient(newPatientCompanion);
+          }
+        } else {
+          final newPatientCompanion = PatientsCompanion.insert(
+            name: 'Unknown Patient',
+            age: 0,
+            gender: 'Other',
+          );
+          resolvedPatientId = await _db.patientDao.insertPatient(newPatientCompanion);
+        }
+      }
+
+      // Step 2: Referral Upsert
+      final existingReferral = await _db.referralDao.getReferralByReferralId(referral.referralToken);
+
+      if (existingReferral != null) {
+        // Guard: Do not overwrite local pending unsynced changes
+        if (existingReferral.syncStatus == 'PENDING' || existingReferral.syncStatus == 'SYNCING') {
+          AppLogger.warning(
+            'Referral ${referral.referralToken} has pending local changes; skipping sync overwrite',
+            'LocalStorage',
+          );
+          return await _mapReferralDataToDomain(existingReferral);
+        }
+
+        // Update server-sourced fields and set syncStatus to SYNCED
+        await (_db.update(_db.referrals)..where((t) => t.referralId.equals(referral.referralToken))).write(
+          ReferralsCompanion(
+            patientId: Value(resolvedPatientId),
+            sourceFacility: Value(referral.sourceFacilityId),
+            destinationFacility: Value(referral.destinationFacilityId),
+            reason: Value(referral.referralReason),
+            clinicalNotes: Value(referral.clinicalNotesSummary),
+            urgency: Value(referral.urgency.code),
+            status: Value(referral.status.code),
+            syncStatus: const Value('SYNCED'),
+            updatedAt: Value(referral.updatedAt),
+          ),
+        );
+
+        final updatedRow = await _db.referralDao.getReferralByReferralId(referral.referralToken);
+        return await _mapReferralDataToDomain(updatedRow!);
+      } else {
+        // Insert new referral from server
+        final newReferralCompanion = ReferralsCompanion.insert(
+          referralId: referral.referralToken,
+          patientId: resolvedPatientId,
+          sourceFacility: referral.sourceFacilityId.trim(),
+          destinationFacility: referral.destinationFacilityId.trim(),
+          reason: referral.referralReason.trim(),
+          clinicalNotes: Value(referral.clinicalNotesSummary?.trim()),
+          urgency: Value(referral.urgency.code),
+          status: Value(referral.status.code),
+          syncStatus: const Value('SYNCED'),
+          createdAt: Value(referral.createdAt),
+          updatedAt: Value(referral.updatedAt),
+        );
+
+        final rowId = await _db.referralDao.insertReferral(newReferralCompanion);
+        final insertedRow = await _db.referralDao.getReferralById(rowId);
+        return await _mapReferralDataToDomain(insertedRow!);
+      }
+    });
   }
 
   @override
@@ -344,7 +447,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
       sourceFacilityId: row.sourceFacility,
       destinationFacilityId: row.destinationFacility,
       referralReason: row.reason,
-      urgency: ReferralUrgency.routine,
+      urgency: ReferralUrgencyExtension.fromString(row.urgency),
       clinicalNotesSummary: row.clinicalNotes,
       status: ReferralStatusExtension.fromString(row.status),
       syncState: row.syncStatus == 'SYNCED'
@@ -503,6 +606,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
     required String destinationFacility,
     required String reason,
     String? clinicalNotes,
+    ReferralUrgency urgency = ReferralUrgency.routine,
     String? customReferralId,
     String? createdByStaff,
   }) async {
@@ -548,6 +652,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
         destinationFacility: destinationFacility.trim(),
         reason: reason.trim(),
         clinicalNotes: Value(clinicalNotes?.trim()),
+        urgency: Value(urgency.code),
         status: const Value('CREATED'),
         syncStatus: const Value('PENDING'),
       );
@@ -578,6 +683,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
         'destinationFacility': destinationFacility.trim(),
         'reason': reason.trim(),
         'clinicalNotes': clinicalNotes?.trim(),
+        'urgency': urgency.code,
         'status': 'CREATED',
         'createdAt': DateTime.now().toIso8601String(),
       });

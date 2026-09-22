@@ -1,5 +1,5 @@
-// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/material.dart';
+import '../models/referral.dart';
 import '../repositories/sync_repository.dart';
 import '../providers/connectivity_provider.dart';
 import '../core/utils/logger.dart';
@@ -135,6 +135,35 @@ class SyncProvider extends ChangeNotifier {
       AppLogger.warning('Retry pass failed with error: $e', 'SyncProvider');
       await refreshCounts();
       return 0;
+    } finally {
+      if (!_isDisposed) {
+        _isSyncing = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Triggers pull-sync specifically to download referrals from server.
+  Future<List<Referral>> pullReferrals({int skip = 0, int limit = 100, String? status}) async {
+    if (_isSyncing || _isDisposed) {
+      return [];
+    }
+
+    _isSyncing = true;
+    _syncError = null;
+    notifyListeners();
+
+    try {
+      final list = await syncRepository.pullReferrals(skip: skip, limit: limit, status: status);
+      _lastSyncTime = DateTime.now().toIso8601String();
+      _syncError = null;
+      await refreshCounts();
+      return list;
+    } catch (e) {
+      _syncError = 'Pull sync failed: $e';
+      AppLogger.warning('Pull sync failed with error: $e', 'SyncProvider');
+      await refreshCounts();
+      rethrow;
     } finally {
       if (!_isDisposed) {
         _isSyncing = false;

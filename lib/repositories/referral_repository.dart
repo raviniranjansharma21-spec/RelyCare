@@ -36,6 +36,7 @@ class ReferralRepository {
     required String destinationFacility,
     required String reason,
     String? clinicalNotes,
+    ReferralUrgency urgency = ReferralUrgency.routine,
     String? customReferralId,
     String? createdByStaff,
   }) async {
@@ -49,6 +50,7 @@ class ReferralRepository {
       destinationFacility: destinationFacility,
       reason: reason,
       clinicalNotes: clinicalNotes,
+      urgency: urgency,
       customReferralId: customReferralId,
       createdByStaff: createdByStaff,
     );
@@ -77,6 +79,7 @@ class ReferralRepository {
       destinationFacility: referral.destinationFacilityId,
       reason: referral.referralReason,
       clinicalNotes: referral.clinicalNotesSummary,
+      urgency: referral.urgency,
       customReferralId: referral.referralToken.isNotEmpty ? referral.referralToken : null,
     );
   }
@@ -99,6 +102,23 @@ class ReferralRepository {
   /// Updates status (e.g. PATIENT_ARRIVED, UNDER_TREATMENT, COMPLETED).
   Future<void> updateStatus(String referralId, ReferralStatus status) async {
     await localStorage.updateReferralStatus(referralId, status.code);
+  }
+
+  /// Pulls the latest referrals from FastAPI backend into local SQLite.
+  Future<List<Referral>> pullReferralsFromServer({int skip = 0, int limit = 100, String? status}) async {
+    final isOnline = await connectivityService.checkConnectivity();
+    if (!isOnline) {
+      AppLogger.warning('Cannot pull referrals: Device is offline', 'ReferralRepository');
+      throw const NetworkException('Device is offline');
+    }
+
+    final serverReferrals = await apiService.fetchReferrals(skip: skip, limit: limit, status: status);
+    final savedReferrals = <Referral>[];
+    for (final ref in serverReferrals) {
+      final saved = await localStorage.upsertReferralFromSync(ref);
+      savedReferrals.add(saved);
+    }
+    return savedReferrals;
   }
 
   // ==========================================

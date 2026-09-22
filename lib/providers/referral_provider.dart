@@ -59,6 +59,30 @@ class ReferralProvider extends ChangeNotifier {
     }
   }
 
+  /// Pulls latest referrals from server into local SQLite and refreshes state.
+  Future<List<Referral>> pullReferrals({int skip = 0, int limit = 100, String? status}) async {
+    if (_isLoading || _isDisposed) return _referrals;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final list = await referralRepository.pullReferralsFromServer(skip: skip, limit: limit, status: status);
+      await loadReferrals();
+      return list;
+    } catch (e) {
+      if (!_isDisposed) {
+        _errorMessage = 'Failed to pull referrals: $e';
+      }
+      rethrow;
+    } finally {
+      if (!_isDisposed) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
   /// Creates a new referral offline with duplicate submission protection.
   Future<Referral?> createReferral({
     required String patientName,
@@ -70,6 +94,7 @@ class ReferralProvider extends ChangeNotifier {
     required String destinationFacility,
     required String reason,
     String? clinicalNotes,
+    ReferralUrgency urgency = ReferralUrgency.routine,
     String? customReferralId,
     String? createdByStaff,
   }) async {
@@ -93,6 +118,7 @@ class ReferralProvider extends ChangeNotifier {
         destinationFacility: destinationFacility,
         reason: reason,
         clinicalNotes: clinicalNotes,
+        urgency: urgency,
         customReferralId: customReferralId,
         createdByStaff: createdByStaff,
       );
