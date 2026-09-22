@@ -181,7 +181,26 @@ class SyncService {
         }
 
         // Attempt API synchronization
-        await apiService.createReferral(referral);
+        try {
+          await apiService.createReferral(referral);
+        } on DuplicateReferralException catch (dupEx) {
+          // Reconcile 409 Duplicate: check if referral exists on server
+          try {
+            await apiService.getReferral(dupEx.referralId);
+            AppLogger.info(
+              'Reconciled duplicate referral ${dupEx.referralId} from server on 409 Conflict',
+              'SyncService',
+            );
+          } catch (fetchErr, fetchStack) {
+            AppLogger.error(
+              'Failed to verify duplicate referral ${dupEx.referralId} on server: $fetchErr',
+              fetchErr,
+              fetchStack,
+              'SyncService',
+            );
+            rethrow;
+          }
+        }
 
         // On success: mark queue item SUCCESS and local referral SYNCED
         await localStorage.markSyncSuccess(queueItem.id);
@@ -192,6 +211,7 @@ class SyncService {
           'Successfully synced referral ${referral.referralToken} (Queue #${queueItem.id})',
           'SyncService',
         );
+
       } catch (e, stack) {
         AppLogger.error(
           'Failed to sync queue item #${queueItem.id} (${queueItem.entityId}): $e',

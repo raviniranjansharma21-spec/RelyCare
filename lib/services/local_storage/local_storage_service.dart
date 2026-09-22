@@ -292,7 +292,20 @@ class LocalStorageServiceImpl implements LocalStorageService {
   @override
   Future<Referral> upsertReferralFromSync(Referral referral) async {
     return await _db.transaction(() async {
-      // Step 1: Patient Resolution
+      // Step 1: Guard against overwriting local pending unsynced changes
+      // Checked before patient resolution to avoid creating unnecessary local patient records
+      final existingReferral = await _db.referralDao.getReferralByReferralId(referral.referralToken);
+      if (existingReferral != null) {
+        if (existingReferral.syncStatus == 'PENDING' || existingReferral.syncStatus == 'SYNCING') {
+          AppLogger.warning(
+            'Referral ${referral.referralToken} has pending local changes; skipping sync overwrite',
+            'LocalStorage',
+          );
+          return await _mapReferralDataToDomain(existingReferral);
+        }
+      }
+
+      // Step 2: Patient Resolution (only for non-pending existing or new server referrals)
       int resolvedPatientId;
       final incomingPatient = referral.patient;
 
@@ -351,19 +364,8 @@ class LocalStorageServiceImpl implements LocalStorageService {
         }
       }
 
-      // Step 2: Referral Upsert
-      final existingReferral = await _db.referralDao.getReferralByReferralId(referral.referralToken);
-
+      // Step 3: Referral Upsert
       if (existingReferral != null) {
-        // Guard: Do not overwrite local pending unsynced changes
-        if (existingReferral.syncStatus == 'PENDING' || existingReferral.syncStatus == 'SYNCING') {
-          AppLogger.warning(
-            'Referral ${referral.referralToken} has pending local changes; skipping sync overwrite',
-            'LocalStorage',
-          );
-          return await _mapReferralDataToDomain(existingReferral);
-        }
-
         // Update server-sourced fields and set syncStatus to SYNCED
         await (_db.update(_db.referrals)..where((t) => t.referralId.equals(referral.referralToken))).write(
           ReferralsCompanion(
@@ -383,6 +385,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
         return await _mapReferralDataToDomain(updatedRow!);
       } else {
         // Insert new referral from server
+
         final newReferralCompanion = ReferralsCompanion.insert(
           referralId: referral.referralToken,
           patientId: resolvedPatientId,

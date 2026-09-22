@@ -57,23 +57,27 @@ class AppDependencies {
           connectivityService: connectivity,
         );
 
+    final sync = SyncService(
+      localStorage: storage,
+      apiService: api,
+      connectivityService: connectivity,
+    );
+
     final referralRepo = referralRepository ??
         ReferralRepository(
           localStorage: storage,
           apiService: api,
           connectivityService: connectivity,
           smsService: sms,
+          syncService: sync,
         );
 
     final syncRepo = syncRepository ??
         SyncRepository(
           localStorage: storage,
-          syncService: SyncService(
-            localStorage: storage,
-            apiService: api,
-            connectivityService: connectivity,
-          ),
+          syncService: sync,
         );
+
 
     final referralProv = referralProvider ??
         ReferralProvider(

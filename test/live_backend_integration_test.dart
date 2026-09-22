@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:relycare/core/errors/app_exceptions.dart';
@@ -31,9 +32,12 @@ class _AlwaysOnlineConnectivityService implements ConnectivityService {
 }
 
 void main() {
-  test('LIVE Integration: Flutter ApiServiceImpl -> FastAPI -> PostgreSQL verification', () async {
-    const baseUrl = 'http://127.0.0.1:8000/api/v1';
-    final apiService = ApiServiceImpl(baseUrl: baseUrl);
+  test(
+    'LIVE Integration: Flutter ApiServiceImpl -> FastAPI -> PostgreSQL verification',
+    () async {
+      const baseUrl = 'http://127.0.0.1:8000/api/v1';
+      final apiService = ApiServiceImpl(baseUrl: baseUrl);
+
 
     final uniqueToken = 'RC-LIVE-${DateTime.now().millisecondsSinceEpoch % 1000000}';
 
@@ -90,18 +94,23 @@ void main() {
     await apiService.updateReferralStatus(uniqueToken, 'RECEIVED');
     final updated = await apiService.getReferral(uniqueToken);
     expect(updated.status, equals(ReferralStatus.received));
-  });
+  },
+  skip: Platform.environment['LIVE_BACKEND'] != 'true',
+  );
 
-  test('LIVE Integration: End-to-End Pull-Sync (FastAPI/PostgreSQL -> Flutter SyncService -> Drift SQLite)', () async {
-    const baseUrl = 'http://127.0.0.1:8000/api/v1';
-    final apiService = ApiServiceImpl(baseUrl: baseUrl);
-    final db = AppDatabase(NativeDatabase.memory());
-    final localStorage = LocalStorageServiceImpl(db);
-    final syncService = SyncService(
-      localStorage: localStorage,
-      apiService: apiService,
-      connectivityService: _AlwaysOnlineConnectivityService(),
-    );
+  test(
+    'LIVE Integration: End-to-End Pull-Sync (FastAPI/PostgreSQL -> Flutter SyncService -> Drift SQLite)',
+    () async {
+      const baseUrl = 'http://127.0.0.1:8000/api/v1';
+      final apiService = ApiServiceImpl(baseUrl: baseUrl);
+      final db = AppDatabase(NativeDatabase.memory());
+      final localStorage = LocalStorageServiceImpl(db);
+      final syncService = SyncService(
+        localStorage: localStorage,
+        apiService: apiService,
+        connectivityService: _AlwaysOnlineConnectivityService(),
+      );
+
 
 
     final uniqueToken = 'RC-PULL-LIVE-${DateTime.now().millisecondsSinceEpoch % 1000000}';
@@ -169,7 +178,8 @@ void main() {
     expect(patientCountAfter, equals(patientCountBefore));
 
     await db.close();
-  });
+  },
+  skip: Platform.environment['LIVE_BACKEND'] != 'true',
+  );
 }
-
 

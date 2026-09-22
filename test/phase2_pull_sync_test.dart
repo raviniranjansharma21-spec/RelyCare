@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 
 import 'package:relycare/core/errors/app_exceptions.dart';
@@ -23,6 +24,8 @@ class FakePullApiService implements ApiService {
   final List<Referral> createdReferrals = [];
   bool shouldThrowFetchError = false;
   bool shouldThrowCreateError = false;
+  bool shouldThrowDuplicateOnCreate = false;
+  bool shouldThrowGetError = false;
   Duration simulatedDelay = Duration.zero;
 
   @override
@@ -45,6 +48,9 @@ class FakePullApiService implements ApiService {
     if (simulatedDelay > Duration.zero) {
       await Future<void>.delayed(simulatedDelay);
     }
+    if (shouldThrowDuplicateOnCreate) {
+      throw DuplicateReferralException(referral.referralToken);
+    }
     if (shouldThrowCreateError) {
       throw const NetworkException('500 Internal Server Error: Database failure', statusCode: 500);
     }
@@ -54,8 +60,12 @@ class FakePullApiService implements ApiService {
 
   @override
   Future<Referral> getReferral(String referralId) async {
+    if (shouldThrowGetError) {
+      throw const NetworkException('404 Not Found', statusCode: 404);
+    }
     return serverReferrals.firstWhere((r) => r.referralToken == referralId);
   }
+
 
   @override
   Future<void> updateReferralStatus(String referralId, String status) async {}
@@ -138,8 +148,10 @@ void main() {
       apiService: apiService,
       connectivityService: connectivityService,
       smsService: FakePullSmsService(),
+      syncService: syncService,
     );
   });
+
 
   tearDown(() async {
     connectivityService.dispose();
@@ -683,6 +695,230 @@ void main() {
       final allLocal = await referralRepository.getAllReferrals();
       expect(allLocal.length, equals(1));
       expect(allLocal.first.patient?.fullName, equals('Repo Patient'));
+    });
+
+    // 16. Ambiguous phone matching returns null
+    test('16. Ambiguous phone match returns null and does not blindly select first row', () async {
+      await db.patientDao.insertPatient(
+        PatientsCompanion.insert(
+          name: 'Patient One',
+          age: 30,
+          gender: 'Male',
+          phone: const Value('+91 9999911111'),
+        ),
+      );
+      await db.patientDao.insertPatient(
+        PatientsCompanion.insert(
+          name: 'Patient Two',
+          age: 40,
+          gender: 'Female',
+          phone: const Value('9999911111'), // Same normalized phone
+        ),
+      );
+
+      final match = await db.patientDao.findPatientByPhone('+91 99999 11111');
+      expect(match, isNull); // Must return null due to ambiguity
+    });
+
+    // 17. Ambiguous demographic matching returns null
+    test('17. Ambiguous demographic match returns null when location is missing or identical', () async {
+      await db.patientDao.insertPatient(
+        PatientsCompanion.insert(
+          name: 'Same Name',
+          age: 25,
+          gender: 'Male',
+        ),
+      );
+      await db.patientDao.insertPatient(
+        PatientsCompanion.insert(
+          name: 'Same Name',
+          age: 25,
+          gender: 'Male',
+        ),
+      );
+
+      final match = await db.patientDao.findPatientByDemographics(
+        name: 'Same Name',
+        age: 25,
+        gender: 'Male',
+      );
+      expect(match, isNull); // Ambiguous demographics return null
+    });
+
+    // 18. Unique demographic matching returns single candidate
+    test('18. Unique demographic match correctly returns the single candidate', () async {
+      final p1Id = await db.patientDao.insertPatient(
+        PatientsCompanion.insert(
+          name: 'Unique Person',
+          age: 50,
+          gender: 'Female',
+          location: const Value('Sector 5'),
+        ),
+      );
+
+      final match = await db.patientDao.findPatientByDemographics(
+        name: 'Unique Person',
+        age: 50,
+        gender: 'Female',
+        location: 'Sector 5',
+      );
+      expect(match, isNotNull);
+      expect(match!.id, equals(p1Id));
+    });
+
+    // 19. Pending local referral + pull-sync does NOT create an extra patient
+    test('19. Existing PENDING referral does not create orphan patient on server pull', () async {
+      // 1. Create a local offline referral (PENDING)
+      await referralRepository.createReferralOffline(
+        patientName: 'Pending Patient',
+        patientAge: 29,
+        patientGender: 'Male',
+        patientPhone: '+91 8888877777',
+        sourceFacility: 'PHC-01',
+        destinationFacility: 'DH-01',
+        reason: 'Local unpushed reason',
+        customReferralId: 'RC-PENDING-001',
+      );
+
+      final patientCountBefore = (await db.select(db.patients).get()).length;
+
+
+      // 2. Server sends an update for the same referral token
+      final serverRef = Referral(
+        id: 'RC-PENDING-001',
+        referralToken: 'RC-PENDING-001',
+        patientId: '',
+        patient: Patient(
+          id: '',
+          fullName: 'Stale Server Demographics',
+          age: 35,
+          gender: 'Other',
+          contactNumber: '+91 1111122222',
+          villageOrLocation: 'Server City',
+          createdAt: DateTime.now(),
+        ),
+        sourceFacilityId: 'PHC-01',
+        destinationFacilityId: 'DH-01',
+        referralReason: 'Stale server reason',
+        urgency: ReferralUrgency.routine,
+        status: ReferralStatus.created,
+        syncState: SyncState.synced,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      apiService.serverReferrals = [serverRef];
+
+      // 3. Execute Pull-Sync
+      final pulled = await syncService.pullReferralsFromServer();
+      expect(pulled.length, equals(1));
+      expect(pulled.first.referralReason, equals('Local unpushed reason'));
+
+      // 4. Verify no new patient was created
+      final patientCountAfter = (await db.select(db.patients).get()).length;
+      expect(patientCountAfter, equals(patientCountBefore));
+    });
+
+    // 20. 409 Duplicate on Push is reconciled via getReferral
+    test('20. DuplicateReferralException (409) is reconciled as SUCCESS if server has referral', () async {
+      // Create local offline referral
+      await referralRepository.createReferralOffline(
+        patientName: 'Dup Check Patient',
+        patientAge: 32,
+        patientGender: 'Female',
+        sourceFacility: 'PHC-01',
+        destinationFacility: 'DH-01',
+        reason: 'Reconciliation test',
+        customReferralId: 'RC-DUP-001',
+      );
+
+
+      // Server already has this referral
+      apiService.serverReferrals = [
+        Referral(
+          id: 'RC-DUP-001',
+          referralToken: 'RC-DUP-001',
+          patientId: '',
+          sourceFacilityId: 'PHC-01',
+          destinationFacilityId: 'DH-01',
+          referralReason: 'Reconciliation test',
+          urgency: ReferralUrgency.routine,
+          status: ReferralStatus.created,
+          syncState: SyncState.synced,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        )
+      ];
+      // When POST is called, backend throws 409
+      apiService.shouldThrowDuplicateOnCreate = true;
+
+      // Execute push sync
+      final synced = await syncService.syncPendingReferrals();
+      expect(synced, equals(1));
+
+      // Local referral should be marked SYNCED
+      final localRef = await localStorage.getDomainReferralById('RC-DUP-001');
+      expect(localRef!.syncState, equals(SyncState.synced));
+
+      // Queue item should be marked SUCCESS
+      final queueItems = await (db.select(db.syncQueue)).get();
+      expect(queueItems.first.status, equals('SUCCESS'));
+      expect(queueItems.first.retryCount, equals(0));
+    });
+
+    // 21. 409 Duplicate on Push marks FAILED if getReferral fails
+    test('21. DuplicateReferralException (409) marks FAILED if getReferral fails', () async {
+      await referralRepository.createReferralOffline(
+        patientName: 'Dup Fail Patient',
+        patientAge: 32,
+        patientGender: 'Female',
+        sourceFacility: 'PHC-01',
+        destinationFacility: 'DH-01',
+        reason: 'Reconciliation fail test',
+        customReferralId: 'RC-DUP-FAIL-001',
+      );
+
+      apiService.shouldThrowDuplicateOnCreate = true;
+      apiService.shouldThrowGetError = true;
+
+      final synced = await syncService.syncPendingReferrals();
+      expect(synced, equals(0));
+
+      final localRef = await localStorage.getDomainReferralById('RC-DUP-FAIL-001');
+      expect(localRef!.syncState, equals(SyncState.pendingSync));
+
+      final queueItems = await (db.select(db.syncQueue)).get();
+      expect(queueItems.first.status, equals('FAILED'));
+      expect(queueItems.first.retryCount, equals(1));
+    });
+
+    // 22. Shared SyncService concurrency lock across ReferralRepository and SyncRepository
+    test('22. ReferralRepository and SyncRepository share the same concurrency lock', () async {
+      apiService.simulatedDelay = const Duration(milliseconds: 100);
+      apiService.serverReferrals = [
+        Referral(
+          id: 'RC-LOCK-001',
+          referralToken: 'RC-LOCK-001',
+          patientId: '',
+          sourceFacilityId: 'PHC-01',
+          destinationFacilityId: 'DH-01',
+          referralReason: 'Lock test',
+          urgency: ReferralUrgency.routine,
+          status: ReferralStatus.created,
+          syncState: SyncState.synced,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        )
+      ];
+
+      // Launch pull via syncRepository and referralRepository concurrently
+      final fut1 = syncRepository.pullReferrals();
+      final fut2 = referralRepository.pullReferralsFromServer();
+
+      final r1 = await fut1;
+      final r2 = await fut2;
+
+      // One succeeds, one is rejected by concurrency lock
+      expect(r1.length + r2.length, equals(1));
     });
   });
 }

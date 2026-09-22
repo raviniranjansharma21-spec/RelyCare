@@ -6,6 +6,7 @@ import '../services/local_storage/app_database.dart';
 import '../services/api/api_service.dart';
 import '../services/connectivity/connectivity_service.dart';
 import '../services/sms/sms_service.dart';
+import '../services/sync/sync_service.dart';
 import '../core/utils/logger.dart';
 import '../core/errors/app_exceptions.dart';
 
@@ -16,13 +17,21 @@ class ReferralRepository {
   final ApiService apiService;
   final ConnectivityService connectivityService;
   final SmsService smsService;
+  final SyncService syncService;
 
   ReferralRepository({
     required this.localStorage,
     required this.apiService,
     required this.connectivityService,
     required this.smsService,
-  });
+    SyncService? syncService,
+  }) : syncService = syncService ??
+            SyncService(
+              localStorage: localStorage,
+              apiService: apiService,
+              connectivityService: connectivityService,
+            );
+
 
   /// Creates a new referral offline using atomic LocalStorage transaction.
   /// Persists Patient, Referral (CREATED), Event (CREATED), and SyncQueue item (PENDING) in SQLite.
@@ -104,22 +113,11 @@ class ReferralRepository {
     await localStorage.updateReferralStatus(referralId, status.code);
   }
 
-  /// Pulls the latest referrals from FastAPI backend into local SQLite.
+  /// Pulls the latest referrals from FastAPI backend into local SQLite via shared SyncService.
   Future<List<Referral>> pullReferralsFromServer({int skip = 0, int limit = 100, String? status}) async {
-    final isOnline = await connectivityService.checkConnectivity();
-    if (!isOnline) {
-      AppLogger.warning('Cannot pull referrals: Device is offline', 'ReferralRepository');
-      throw const NetworkException('Device is offline');
-    }
-
-    final serverReferrals = await apiService.fetchReferrals(skip: skip, limit: limit, status: status);
-    final savedReferrals = <Referral>[];
-    for (final ref in serverReferrals) {
-      final saved = await localStorage.upsertReferralFromSync(ref);
-      savedReferrals.add(saved);
-    }
-    return savedReferrals;
+    return await syncService.pullReferralsFromServer(skip: skip, limit: limit, status: status);
   }
+
 
   // ==========================================
   // PHASE 6: SMS FALLBACK OPERATIONS
