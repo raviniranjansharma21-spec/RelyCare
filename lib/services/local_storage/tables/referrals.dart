@@ -10,6 +10,7 @@ class Referrals extends Table {
   TextColumn get destinationFacility => text()();
   TextColumn get reason => text()();
   TextColumn get clinicalNotes => text().nullable()();
+  TextColumn get urgency => text().withDefault(const Constant('ROUTINE'))();
   TextColumn get status => text().withDefault(const Constant('CREATED'))();
   TextColumn get syncStatus => text().withDefault(const Constant('PENDING'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

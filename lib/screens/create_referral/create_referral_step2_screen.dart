@@ -91,6 +91,7 @@ class _CreateReferralStep2ScreenState extends State<CreateReferralStep2Screen> {
       destinationFacility: referral.destinationFacilityId,
       reason: referral.referralReason,
       clinicalNotes: referral.clinicalNotesSummary,
+      urgency: urgency,
     );
 
     if (createdReferral != null && mounted) {

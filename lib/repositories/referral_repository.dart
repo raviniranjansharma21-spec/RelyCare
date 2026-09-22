@@ -6,6 +6,7 @@ import '../services/local_storage/app_database.dart';
 import '../services/api/api_service.dart';
 import '../services/connectivity/connectivity_service.dart';
 import '../services/sms/sms_service.dart';
+import '../services/sync/sync_service.dart';
 import '../core/utils/logger.dart';
 import '../core/errors/app_exceptions.dart';
 
@@ -16,13 +17,21 @@ class ReferralRepository {
   final ApiService apiService;
   final ConnectivityService connectivityService;
   final SmsService smsService;
+  final SyncService syncService;
 
   ReferralRepository({
     required this.localStorage,
     required this.apiService,
     required this.connectivityService,
     required this.smsService,
-  });
+    SyncService? syncService,
+  }) : syncService = syncService ??
+            SyncService(
+              localStorage: localStorage,
+              apiService: apiService,
+              connectivityService: connectivityService,
+            );
+
 
   /// Creates a new referral offline using atomic LocalStorage transaction.
   /// Persists Patient, Referral (CREATED), Event (CREATED), and SyncQueue item (PENDING) in SQLite.
@@ -36,6 +45,7 @@ class ReferralRepository {
     required String destinationFacility,
     required String reason,
     String? clinicalNotes,
+    ReferralUrgency urgency = ReferralUrgency.routine,
     String? customReferralId,
     String? createdByStaff,
   }) async {
@@ -49,6 +59,7 @@ class ReferralRepository {
       destinationFacility: destinationFacility,
       reason: reason,
       clinicalNotes: clinicalNotes,
+      urgency: urgency,
       customReferralId: customReferralId,
       createdByStaff: createdByStaff,
     );
@@ -77,6 +88,7 @@ class ReferralRepository {
       destinationFacility: referral.destinationFacilityId,
       reason: referral.referralReason,
       clinicalNotes: referral.clinicalNotesSummary,
+      urgency: referral.urgency,
       customReferralId: referral.referralToken.isNotEmpty ? referral.referralToken : null,
     );
   }
@@ -100,6 +112,12 @@ class ReferralRepository {
   Future<void> updateStatus(String referralId, ReferralStatus status) async {
     await localStorage.updateReferralStatus(referralId, status.code);
   }
+
+  /// Pulls the latest referrals from FastAPI backend into local SQLite via shared SyncService.
+  Future<List<Referral>> pullReferralsFromServer({int skip = 0, int limit = 100, String? status}) async {
+    return await syncService.pullReferralsFromServer(skip: skip, limit: limit, status: status);
+  }
+
 
   // ==========================================
   // PHASE 6: SMS FALLBACK OPERATIONS

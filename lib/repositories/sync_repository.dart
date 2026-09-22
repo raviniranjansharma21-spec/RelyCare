@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_initializing_formals
+import '../models/referral.dart';
 import '../services/local_storage/local_storage_service.dart';
 import '../services/sync/sync_service.dart';
 
@@ -32,5 +32,10 @@ class SyncRepository {
   /// Triggers a retry pass specifically for retryable failed queue items.
   Future<int> retryFailed() async {
     return await syncService.retryFailedItems();
+  }
+
+  /// Triggers pull-sync to fetch latest server referrals into local SQLite.
+  Future<List<Referral>> pullReferrals({int skip = 0, int limit = 100, String? status}) async {
+    return await syncService.pullReferralsFromServer(skip: skip, limit: limit, status: status);
   }
 }
