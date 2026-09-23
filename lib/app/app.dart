@@ -18,26 +18,28 @@ class RelyCareApp extends StatefulWidget {
 }
 
 class _RelyCareAppState extends State<RelyCareApp> {
+  late final AppDependencies _dependencies;
   late final AuthProvider _authProvider;
   late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
-    _authProvider = AuthProvider();
+    _dependencies = widget.dependencies ?? AppDependencies();
+    _authProvider = _dependencies.authProvider;
     _router = AppRouter.createRouter(_authProvider);
   }
 
   @override
   void dispose() {
     _router.dispose();
-    _authProvider.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final activeDependencies = widget.dependencies ?? AppDependencies();
+    final activeDependencies = _dependencies;
+
 
     return RelyCareScope(
       dependencies: activeDependencies,

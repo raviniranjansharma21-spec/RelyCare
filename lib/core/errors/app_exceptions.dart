@@ -20,6 +20,20 @@ class NetworkException extends AppException {
   const NetworkException(super.message, {super.code, this.statusCode});
 }
 
+/// Thrown when authentication fails or token is expired (HTTP 401 Unauthorized).
+class UnauthenticatedException extends NetworkException {
+  const UnauthenticatedException([super.message = 'Authentication required or session expired'])
+      : super(code: 'UNAUTHENTICATED', statusCode: 401);
+}
+
+/// Thrown when user lacks permission/role authorization (HTTP 403 Forbidden).
+class UnauthorizedException extends NetworkException {
+  const UnauthorizedException([super.message = 'Access denied for this resource'])
+      : super(code: 'UNAUTHORIZED', statusCode: 403);
+}
+
+
+
 /// Thrown when a duplicate referral token is detected by FastAPI (HTTP 409 Conflict).
 class DuplicateReferralException extends NetworkException {
   final String referralId;

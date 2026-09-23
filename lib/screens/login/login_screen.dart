@@ -20,17 +20,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _initializedFromProvider = false;
 
   @override
   void initState() {
     super.initState();
-    // Read the saved email/phone without listening to changes
+    // Initial setup; sync will trigger once authProvider initialization finishes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
-      if (authProvider.emailOrPhone.isNotEmpty) {
+      if (!authProvider.isInitializing && authProvider.emailOrPhone.isNotEmpty) {
         _emailPhoneController.text = authProvider.emailOrPhone;
         setState(() {
-          _rememberMe = true;
+          _rememberMe = authProvider.rememberMe;
+          _initializedFromProvider = true;
         });
       }
     });
@@ -45,11 +47,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter valid email/phone and password.'),
-        ),
-      );
       return;
     }
 
@@ -59,22 +56,40 @@ class _LoginScreenState extends State<LoginScreen> {
       password: _passwordController.text,
     );
 
-    if (mounted && success) {
-      switch (authProvider.selectedRole) {
-        case 'Hospital Staff':
+    if (mounted) {
+      if (success) {
+        final role = authProvider.currentRole;
+        if (role == UserRole.hospitalStaff) {
           context.go('/hospital-dashboard');
-        case 'Patient':
+        } else if (role == UserRole.patient) {
           context.go('/user-tracking');
-        case 'PHC Staff':
-        default:
+        } else {
           context.go('/phc-dashboard');
+        }
+      } else if (authProvider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage!),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
       }
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+
+    if (!authProvider.isInitializing && !_initializedFromProvider) {
+      _initializedFromProvider = true;
+      if (authProvider.emailOrPhone.isNotEmpty) {
+        _emailPhoneController.text = authProvider.emailOrPhone;
+        _rememberMe = authProvider.rememberMe;
+      }
+    }
+
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -540,53 +555,27 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         children: [
           const Icon(
-            Icons.badge_outlined,
+            Icons.shield_outlined,
             color: Color(0xFF94A3B8),
             size: 20,
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: authProvider.selectedRole,
-                isExpanded: true,
-                icon: const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFF94A3B8),
-                  size: 22,
-                ),
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF1E293B),
-                ),
-                dropdownColor: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                items: authProvider.availableRoles.map((String role) {
-                  return DropdownMenuItem<String>(
-                    value: role,
-                    child: Text(
-                      role,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF1E293B),
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newRole) {
-                  if (newRole != null) {
-                    authProvider.setSelectedRole(newRole);
-                  }
-                },
+            child: Text(
+              'Server Authenticated (Role & Facility assigned by DB)',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF64748B),
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
     );
   }
+
 }
 
 /// Custom Google 'G' icon

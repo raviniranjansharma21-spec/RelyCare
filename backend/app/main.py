@@ -7,7 +7,8 @@ from fastapi.exceptions import RequestValidationError
 
 from app.core.config import settings
 from app.db.database import Base, engine
-from app.api.routes import health_router, referrals_router
+from app.api.routes import health_router, referrals_router, auth_router
+
 
 # Configure basic structured logging
 logging.basicConfig(
@@ -19,19 +20,11 @@ logger = logging.getLogger("relycare.backend")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifecycle hook: initializes database tables and resources."""
+    """Application lifecycle hook: logs application startup/shutdown."""
     logger.info("Starting RelyCare Backend API v%s...", settings.VERSION)
-    try:
-        # Create database tables if they do not exist
-        Base.metadata.create_all(bind=engine)
-        logger.info("PostgreSQL database tables initialized successfully.")
-    except Exception as e:
-        logger.warning(
-            "Note: Database initialization deferred or failed (check DATABASE_URL). Error: %s",
-            str(e),
-        )
     yield
     logger.info("Shutting down RelyCare Backend API...")
+
 
 
 app = FastAPI(
@@ -94,5 +87,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health_router)
 app.include_router(health_router, prefix=settings.API_V1_STR)
 
-# 2. Versioned Referral endpoints (/api/v1/referrals)
+# 2. Versioned Auth endpoints (/api/v1/auth)
+app.include_router(auth_router, prefix=settings.API_V1_STR)
+
+# 3. Versioned Referral endpoints (/api/v1/referrals)
 app.include_router(referrals_router, prefix=settings.API_V1_STR)

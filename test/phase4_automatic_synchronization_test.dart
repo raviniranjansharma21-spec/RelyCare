@@ -5,6 +5,7 @@ import 'package:relycare/models/identity_match.dart';
 import 'package:relycare/models/patient.dart';
 import 'package:relycare/models/referral.dart';
 import 'package:relycare/models/referral_status.dart';
+import 'package:relycare/models/user_model.dart';
 import 'package:relycare/providers/connectivity_provider.dart';
 import 'package:relycare/providers/referral_provider.dart';
 import 'package:relycare/providers/sync_provider.dart';
@@ -25,7 +26,23 @@ class FakeApiService implements ApiService {
   Duration simulatedDelay = Duration.zero;
 
   @override
+  void setAuthToken(String? token) {}
+
+  @override
+  Future<Map<String, dynamic>> login(String username, String password) async => {};
+
+  @override
+  Future<UserModel> getMe() async => const UserModel(
+        id: 1,
+        username: 'test_user',
+        role: 'PHC_STAFF',
+        facilityId: 'PHC_TEST',
+        isActive: true,
+      );
+
+  @override
   Future<Referral> createReferral(Referral referral) async {
+
     if (simulatedDelay > Duration.zero) {
       await Future<void>.delayed(simulatedDelay);
     }

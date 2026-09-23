@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:relycare/core/constants/app_constants.dart';
+import 'package:relycare/core/errors/app_exceptions.dart';
 import 'package:relycare/models/identity_match.dart';
 import 'package:relycare/models/patient.dart';
 import 'package:relycare/models/referral.dart';
+import 'package:relycare/models/user_model.dart';
 import 'package:relycare/providers/connectivity_provider.dart';
 import 'package:relycare/providers/referral_provider.dart';
 import 'package:relycare/providers/sync_provider.dart';
@@ -27,7 +29,23 @@ class FakeRetryApiService implements ApiService {
   Duration simulatedDelay = Duration.zero;
 
   @override
+  void setAuthToken(String? token) {}
+
+  @override
+  Future<Map<String, dynamic>> login(String username, String password) async => {};
+
+  @override
+  Future<UserModel> getMe() async => const UserModel(
+        id: 1,
+        username: 'test_user',
+        role: 'PHC_STAFF',
+        facilityId: 'PHC_TEST',
+        isActive: true,
+      );
+
+  @override
   Future<Referral> createReferral(Referral referral) async {
+
     callCount++;
     if (simulatedDelay > Duration.zero) {
       await Future<void>.delayed(simulatedDelay);
@@ -556,5 +574,47 @@ void main() {
       final updated = await referralRepository.getReferralById(ref.id);
       expect(updated!.syncState, equals(SyncState.synced));
     });
+
+    test('TEST M: UnauthenticatedException resets item to PENDING without incrementing retryCount', () async {
+      await referralProvider.createReferral(
+        patientName: 'Token Expired Patient',
+        patientAge: 29,
+        patientGender: 'Male',
+        sourceFacility: 'PHC North',
+        destinationFacility: 'DH Central',
+        reason: 'Emergency',
+      );
+
+      // Make API throw UnauthenticatedException
+      fakeApi.shouldFail = true;
+
+      // Class to throw UnauthenticatedException
+      final unauthService = _UnauthFakeApiService();
+      final unauthSyncService = SyncService(
+        localStorage: localStorage,
+        apiService: unauthService,
+        connectivityService: fakeConnectivity,
+        maxRetries: 3,
+      );
+
+      // Run multiple sync passes with expired token
+      await unauthSyncService.syncPendingReferrals();
+      await unauthSyncService.syncPendingReferrals();
+      await unauthSyncService.syncPendingReferrals();
+
+      final queue = await db.select(db.syncQueue).get();
+      expect(queue.first.status, equals('PENDING'));
+      expect(queue.first.retryCount, equals(0), reason: 'retryCount must remain 0 on 401 UnauthenticatedException');
+    });
   });
 }
+
+class _UnauthFakeApiService extends FakeRetryApiService {
+  _UnauthFakeApiService();
+
+  @override
+  Future<Referral> createReferral(Referral referral) async {
+    throw const UnauthenticatedException('JWT token expired');
+  }
+}
+

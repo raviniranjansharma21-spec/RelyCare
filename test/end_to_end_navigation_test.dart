@@ -3,12 +3,16 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:relycare/app/app.dart';
+
 import 'package:relycare/app/app_dependencies.dart';
 import 'package:relycare/models/identity_match.dart';
 import 'package:relycare/models/patient.dart';
 import 'package:relycare/models/referral.dart';
+import 'package:relycare/models/user_model.dart';
 import 'package:relycare/providers/auth_provider.dart';
+
 import 'package:relycare/providers/connectivity_provider.dart';
 import 'package:relycare/providers/identity_matching_provider.dart';
 import 'package:relycare/providers/referral_provider.dart';
@@ -29,7 +33,37 @@ class FakeApiService implements ApiService {
   final List<Referral> createdReferrals = [];
 
   @override
+  void setAuthToken(String? token) {}
+
+  @override
+  Future<Map<String, dynamic>> login(String username, String password) async {
+    final isHospital = username.contains('hospital') || username.contains('verma');
+    return {
+      'access_token': 'test_mock_jwt_token',
+      'token_type': 'bearer',
+      'user': {
+        'id': 1,
+        'username': username,
+        'role': isHospital ? 'HOSPITAL_STAFF' : 'PHC_STAFF',
+        'facility_id': isHospital ? 'DH_TEST' : 'PHC_TEST',
+        'is_active': true,
+      },
+    };
+  }
+
+  @override
+  Future<UserModel> getMe() async => const UserModel(
+        id: 1,
+        username: 'test_user',
+        role: 'PHC_STAFF',
+        facilityId: 'PHC_TEST',
+        isActive: true,
+      );
+
+
+  @override
   Future<Referral> createReferral(Referral referral) async {
+
     createdReferrals.add(referral);
     return referral;
   }
@@ -103,9 +137,11 @@ void main() {
   late AppDependencies dependencies;
 
   setUp(() async {
+    FlutterSecureStorage.setMockInitialValues({});
     db = AppDatabase(NativeDatabase.memory());
     storage = LocalStorageServiceImpl(db);
     api = FakeApiService();
+
     connectivity = FakeConnectivityService(initialStatus: ConnectivityStatus.offline);
     sms = MockSmsService();
     matching = MatchingService();
@@ -331,19 +367,14 @@ void main() {
     await tester.pumpWidget(RelyCareApp(dependencies: dependencies));
     await tester.pumpAndSettle();
 
-    // 1. Select Hospital Staff and login
+    // 1. Enter hospital staff credentials (role is assigned by backend database)
     expect(find.text('Welcome Back'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).first, 'dr.verma@hospital.org');
     await tester.enterText(find.byType(TextFormField).at(1), 'password123');
     await tester.pumpAndSettle();
 
-    // Select Hospital Staff role
-    await tester.tap(find.text('PHC Staff'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Hospital Staff').last);
-    await tester.pumpAndSettle();
-
     final loginBtn = find.widgetWithText(ElevatedButton, 'Login');
+
     await tester.tap(loginBtn);
     await tester.pumpAndSettle();
 

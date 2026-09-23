@@ -212,6 +212,13 @@ class SyncService {
           'SyncService',
         );
 
+      } on UnauthenticatedException catch (unauthEx) {
+        AppLogger.warning(
+          'Authentication token expired or invalid during sync pass (${unauthEx.message}). Resetting queue item #${queueItem.id} to PENDING without incrementing retry count and aborting sync pass cleanly.',
+          'SyncService',
+        );
+        await localStorage.resetSyncToPending(queueItem.id);
+        break;
       } catch (e, stack) {
         AppLogger.error(
           'Failed to sync queue item #${queueItem.id} (${queueItem.entityId}): $e',
@@ -226,4 +233,5 @@ class SyncService {
 
     return syncedCount;
   }
+
 }
