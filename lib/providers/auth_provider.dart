@@ -100,13 +100,19 @@ class AuthProvider extends ChangeNotifier {
         } on UnauthenticatedException catch (e) {
           AppLogger.warning('Stored JWT token invalid or expired: ${e.message}', 'AuthProvider');
           await _authStorage.deleteToken();
+          await _authStorage.clearCachedUser();
           _apiService.setAuthToken(null);
           _isAuthenticated = false;
           _currentUser = null;
           _errorMessage = 'Session expired. Please log in again.';
         } on NetworkException catch (e) {
           AppLogger.warning('Network unavailable during session restoration: ${e.message}', 'AuthProvider');
-          // Offline restoration: if offline, do not clear token
+          final cachedUser = await _authStorage.getCachedUser();
+          if (cachedUser != null) {
+            _currentUser = cachedUser;
+            _isAuthenticated = true;
+            AppLogger.info('Offline session restored for ${cachedUser.username} (${cachedUser.role})', 'AuthProvider');
+          }
         }
       }
     } catch (e, stack) {
@@ -140,6 +146,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _currentUser = UserModel.fromJson(userMap);
+      await _authStorage.saveCachedUser(_currentUser!);
       _isAuthenticated = true;
       _isLoading = false;
 
@@ -166,6 +173,7 @@ class AuthProvider extends ChangeNotifier {
   /// Does NOT delete local SQLite referral data or pending queue records.
   Future<void> logout() async {
     await _authStorage.deleteToken();
+    await _authStorage.clearCachedUser();
     _apiService.setAuthToken(null);
     _isAuthenticated = false;
     _currentUser = null;

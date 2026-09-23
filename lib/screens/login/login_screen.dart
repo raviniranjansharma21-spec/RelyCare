@@ -20,17 +20,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _initializedFromProvider = false;
 
   @override
   void initState() {
     super.initState();
-    // Read the saved email/phone without listening to changes
+    // Initial setup; sync will trigger once authProvider initialization finishes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
-      if (authProvider.emailOrPhone.isNotEmpty) {
+      if (!authProvider.isInitializing && authProvider.emailOrPhone.isNotEmpty) {
         _emailPhoneController.text = authProvider.emailOrPhone;
         setState(() {
-          _rememberMe = true;
+          _rememberMe = authProvider.rememberMe;
+          _initializedFromProvider = true;
         });
       }
     });
@@ -79,6 +81,15 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+
+    if (!authProvider.isInitializing && !_initializedFromProvider) {
+      _initializedFromProvider = true;
+      if (authProvider.emailOrPhone.isNotEmpty) {
+        _emailPhoneController.text = authProvider.emailOrPhone;
+        _rememberMe = authProvider.rememberMe;
+      }
+    }
+
     final size = MediaQuery.of(context).size;
 
     return Scaffold(

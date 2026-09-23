@@ -84,6 +84,7 @@ abstract class LocalStorageService {
   Future<void> markSyncing(int queueId);
   Future<void> markSyncSuccess(int queueId);
   Future<void> markSyncFailed(int queueId, {bool resetToPending = true});
+  Future<void> resetSyncToPending(int queueId);
 
   // Atomic Referral Creation Transaction (Step 8)
   Future<ReferralData> createReferralTransaction({
@@ -592,6 +593,11 @@ class LocalStorageServiceImpl implements LocalStorageService {
   Future<void> markSyncFailed(int queueId, {bool resetToPending = true}) async {
     await _db.syncQueueDao.markFailed(queueId, resetToPending: resetToPending);
     await _db.syncQueueDao.incrementRetryCount(queueId);
+  }
+
+  @override
+  Future<void> resetSyncToPending(int queueId) async {
+    await _db.syncQueueDao.markFailed(queueId, resetToPending: true);
   }
 
   // ==========================================

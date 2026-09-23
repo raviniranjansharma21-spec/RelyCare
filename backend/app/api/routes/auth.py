@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models.user import UserModel
 from app.models.facility import FacilityModel
 from app.schemas.auth import LoginRequest, TokenResponse, UserResponse, FacilityResponse
-from app.core.security import verify_password, create_access_token
+from app.core.security import verify_password, hash_password, create_access_token
+from app.core.ratelimit import login_limiter
 from app.api.dependencies.auth import get_current_active_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# Dummy hash generated at module initialization for timing-attack resistance
+_DUMMY_HASH = hash_password("dummy-password-for-timing")
 
 
 @router.post(
@@ -18,11 +22,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     summary="Authenticate user and return JWT token",
 )
 def login(
+    request: Request,
     login_data: LoginRequest,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
     """Authenticate user credentials against PostgreSQL and return a JWT access token."""
     username_or_id = login_data.username.strip()
+
+    # Rate limiting check (per IP and per identifier)
+    login_limiter.check_rate_limit(request, username_or_id)
     
     # Query user by username, email, or phone identifier
     user = (
@@ -35,7 +43,10 @@ def login(
         .first()
     )
 
-    if not user or not verify_password(login_data.password, user.password_hash):
+    stored_hash = user.password_hash if user else _DUMMY_HASH
+    password_ok = verify_password(login_data.password, stored_hash)
+
+    if not user or not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",

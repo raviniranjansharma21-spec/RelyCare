@@ -7,6 +7,9 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.db.database import Base, get_db
+from app.core.config import settings
+
+settings.ENVIRONMENT = "testing"
 
 # Use an isolated in-memory SQLite database for unit/integration tests
 TEST_DATABASE_URL = "sqlite:///:memory:"

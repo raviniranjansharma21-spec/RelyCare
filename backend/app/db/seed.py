@@ -7,6 +7,14 @@ from app.core.security import hash_password
 
 def seed_development_data():
     """Seed development test facilities and staff users safely into local PostgreSQL."""
+    phc_password = os.getenv("DEV_PHC_PASSWORD")
+    dh_password = os.getenv("DEV_HOSPITAL_PASSWORD")
+
+    if not phc_password or not dh_password:
+        raise RuntimeError(
+            "DEV_PHC_PASSWORD and DEV_HOSPITAL_PASSWORD environment variables must be set before running seed script."
+        )
+
     db = SessionLocal()
     try:
         # 1. Seed facilities
@@ -34,9 +42,8 @@ def seed_development_data():
 
         db.commit()
 
-        # 2. Seed development users (passwords read from environment or generated securely)
+        # 2. Seed development users
         phc_username = os.getenv("DEV_PHC_USERNAME", "phc_user1")
-        phc_password = os.getenv("DEV_PHC_PASSWORD", "RelyCarePhc2026!")
 
         u_phc = db.query(UserModel).filter(UserModel.username == phc_username).first()
         if not u_phc:
@@ -52,7 +59,6 @@ def seed_development_data():
             db.add(u_phc)
 
         dh_username = os.getenv("DEV_HOSPITAL_USERNAME", "hosp_user1")
-        dh_password = os.getenv("DEV_HOSPITAL_PASSWORD", "RelyCareHosp2026!")
 
         u_dh = db.query(UserModel).filter(UserModel.username == dh_username).first()
         if not u_dh:

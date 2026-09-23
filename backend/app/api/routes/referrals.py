@@ -40,6 +40,12 @@ def create_referral(
     current_user: UserModel = Depends(get_current_active_user),
 ) -> ReferralResponse:
     """Receive a referral created offline/online in RelyCare and persist it in the central server database."""
+    if current_user.role not in {"PHC_STAFF", "HOSPITAL_STAFF"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{current_user.role}' cannot perform this operation",
+        )
+
     if current_user.role == "PHC_STAFF" and current_user.facility_id and referral_in.source_facility != current_user.facility_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -83,7 +89,7 @@ def get_referral(
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"User at facility '{current_user.facility_id}' is not authorized to access referral for '{referral.source_facility}' -> '{referral.destination_facility}'",
+                detail="Not authorized to access this referral",
             )
 
         return ReferralResponse.model_validate(referral)
@@ -113,6 +119,12 @@ def update_referral_status(
     current_user: UserModel = Depends(get_current_active_user),
 ) -> ReferralResponse:
     """Update the lifecycle status of a referral (e.g. RECEIVED, PATIENT_ARRIVED, UNDER_TREATMENT, COMPLETED)."""
+    if current_user.role not in {"PHC_STAFF", "HOSPITAL_STAFF"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{current_user.role}' cannot perform this operation",
+        )
+
     try:
         referral = referral_service.get_referral(db=db, referral_id=referral_id)
 
