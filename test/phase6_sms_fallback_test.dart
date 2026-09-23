@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:relycare/models/identity_match.dart';
 import 'package:relycare/models/patient.dart';
 import 'package:relycare/models/referral.dart';
+import 'package:relycare/models/user_model.dart';
 import 'package:relycare/providers/referral_provider.dart';
 import 'package:relycare/repositories/patient_repository.dart';
 import 'package:relycare/repositories/referral_repository.dart';
@@ -15,7 +16,23 @@ import 'package:relycare/services/sms/sms_service.dart';
 /// Fake API stub for testing isolation.
 class FakeApiStub implements ApiService {
   @override
+  void setAuthToken(String? token) {}
+
+  @override
+  Future<Map<String, dynamic>> login(String username, String password) async => {};
+
+  @override
+  Future<UserModel> getMe() async => const UserModel(
+        id: 1,
+        username: 'test_user',
+        role: 'PHC_STAFF',
+        facilityId: 'PHC_TEST',
+        isActive: true,
+      );
+
+  @override
   Future<Referral> createReferral(Referral referral) async => referral;
+
 
   @override
   Future<Referral> getReferral(String referralId) async => throw UnimplementedError();

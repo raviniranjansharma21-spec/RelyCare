@@ -8,6 +8,7 @@ import 'package:relycare/models/identity_match.dart';
 import 'package:relycare/models/patient.dart';
 import 'package:relycare/models/referral.dart';
 import 'package:relycare/models/referral_status.dart';
+import 'package:relycare/models/user_model.dart';
 import 'package:relycare/providers/sync_provider.dart';
 import 'package:relycare/repositories/referral_repository.dart';
 import 'package:relycare/repositories/sync_repository.dart';
@@ -27,6 +28,22 @@ class FakePullApiService implements ApiService {
   bool shouldThrowDuplicateOnCreate = false;
   bool shouldThrowGetError = false;
   Duration simulatedDelay = Duration.zero;
+
+  @override
+  void setAuthToken(String? token) {}
+
+  @override
+  Future<Map<String, dynamic>> login(String username, String password) async => {};
+
+  @override
+  Future<UserModel> getMe() async => const UserModel(
+        id: 1,
+        username: 'test_user',
+        role: 'PHC_STAFF',
+        facilityId: 'PHC_TEST',
+        isActive: true,
+      );
+
 
   @override
   Future<List<Referral>> fetchReferrals({int skip = 0, int limit = 100, String? status}) async {

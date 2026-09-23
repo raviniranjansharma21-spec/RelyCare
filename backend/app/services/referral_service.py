@@ -44,9 +44,11 @@ class ReferralService:
         skip: int = 0,
         limit: int = 100,
         status: Optional[str] = None,
+        facility_code: Optional[str] = None,
     ) -> Tuple[List[ReferralModel], int]:
-        """List referrals with pagination and optional filtering."""
-        return self.repo.list_referrals(db, skip=skip, limit=limit, status=status)
+        """List referrals with pagination and optional status/facility filtering."""
+        return self.repo.list_referrals(db, skip=skip, limit=limit, status=status, facility_code=facility_code)
+
 
 
 referral_service = ReferralService()

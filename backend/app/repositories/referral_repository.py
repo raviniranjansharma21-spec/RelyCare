@@ -23,15 +23,22 @@ class ReferralRepository:
         skip: int = 0,
         limit: int = 100,
         status: Optional[str] = None,
+        facility_code: Optional[str] = None,
     ) -> Tuple[List[ReferralModel], int]:
-        """List referrals with optional status filtering and pagination. Returns (items, total_count)."""
+        """List referrals with optional status and facility filtering and pagination. Returns (items, total_count)."""
         query = db.query(ReferralModel)
         if status:
             query = query.filter(ReferralModel.status == status)
+        if facility_code:
+            query = query.filter(
+                (ReferralModel.source_facility == facility_code)
+                | (ReferralModel.destination_facility == facility_code)
+            )
         
         total = query.count()
         items = query.order_by(ReferralModel.created_at.desc()).offset(skip).limit(limit).all()
         return items, total
+
 
     def create(self, db: Session, referral_in: ReferralCreate) -> ReferralModel:
         """Insert a new referral record into the database."""

@@ -9,9 +9,16 @@ import '../../models/referral.dart';
 import '../../models/patient.dart';
 import '../../models/referral_status.dart';
 import '../../models/identity_match.dart';
+import '../../models/user_model.dart';
 
 /// Abstract REST API interface for FastAPI backend communication.
 abstract class ApiService {
+  // Auth Endpoints
+  void setAuthToken(String? token) {}
+  Future<Map<String, dynamic>> login(String username, String password) async => {};
+  Future<UserModel> getMe() async => throw UnimplementedError('getMe not implemented');
+
+
   // Referral Endpoints
   Future<List<Referral>> fetchReferrals({int skip = 0, int limit = 100, String? status});
   Future<Referral> getReferral(String referralId);
@@ -26,24 +33,36 @@ abstract class ApiService {
 }
 
 /// Real HTTP Client Implementation for RelyCare FastAPI Backend.
-///
-/// Communicates with FastAPI endpoints (e.g. `/api/v1/referrals`) and handles
-/// JSON serialization/deserialization, timeouts, and structured HTTP exceptions.
 class ApiServiceImpl implements ApiService {
   final String baseUrl;
   final http.Client _client;
   final Duration timeout;
 
-  static const Map<String, String> _defaultHeaders = {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Accept': 'application/json',
-  };
+  String? _authToken;
 
   ApiServiceImpl({
     required this.baseUrl,
     http.Client? client,
     this.timeout = const Duration(milliseconds: AppConstants.connectTimeoutMs),
-  }) : _client = client ?? http.Client();
+    String? initialToken,
+  })  : _client = client ?? http.Client(),
+        _authToken = initialToken;
+
+  @override
+  void setAuthToken(String? token) {
+    _authToken = token;
+  }
+
+  Map<String, String> get _headers {
+    final headers = <String, String>{
+      'Content-Type': 'application/json; charset=utf-8',
+      'Accept': 'application/json',
+    };
+    if (_authToken != null && _authToken!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $_authToken';
+    }
+    return headers;
+  }
 
   String _normalizeUrl(String path) {
     final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
@@ -56,6 +75,18 @@ class ApiServiceImpl implements ApiService {
       return jsonDecode(body) as Map<String, dynamic>?;
     } catch (_) {
       return null;
+    }
+  }
+
+  void _checkAuthError(http.Response response) {
+    if (response.statusCode == 401) {
+      final body = _tryParseJson(response.body);
+      final detail = body?['detail'] ?? 'Authentication required or token expired';
+      throw UnauthenticatedException(detail.toString());
+    } else if (response.statusCode == 403) {
+      final body = _tryParseJson(response.body);
+      final detail = body?['detail'] ?? 'Access denied for this resource';
+      throw UnauthorizedException(detail.toString());
     }
   }
 
@@ -95,6 +126,88 @@ class ApiServiceImpl implements ApiService {
   }
 
   @override
+  Future<Map<String, dynamic>> login(String username, String password) async {
+    final payload = jsonEncode({
+      'username': username.trim(),
+      'password': password,
+    });
+
+    try {
+      final response = await _client
+          .post(
+            Uri.parse(_normalizeUrl('/auth/login')),
+            headers: _headers,
+            body: payload,
+          )
+          .timeout(timeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final token = data['access_token']?.toString();
+        if (token != null) {
+          setAuthToken(token);
+        }
+        return data;
+      } else if (response.statusCode == 401) {
+        final body = _tryParseJson(response.body);
+        final detail = body?['detail'] ?? 'Invalid username or password';
+        throw UnauthenticatedException(detail.toString());
+      } else if (response.statusCode == 403) {
+        final body = _tryParseJson(response.body);
+        final detail = body?['detail'] ?? 'User account is inactive';
+        throw UnauthorizedException(detail.toString());
+      } else {
+        throw NetworkException(
+          'Login failed (HTTP ${response.statusCode}): ${response.body}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on NetworkException {
+      rethrow;
+    } on SocketException catch (e) {
+      throw NetworkException('Network connection failed: $e');
+    } on TimeoutException catch (e) {
+      throw NetworkException('Request timed out after ${timeout.inSeconds}s: $e');
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw NetworkException('Unexpected error during login: $e');
+    }
+  }
+
+  @override
+  Future<UserModel> getMe() async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse(_normalizeUrl('/auth/me')),
+            headers: _headers,
+          )
+          .timeout(timeout);
+
+      _checkAuthError(response);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        return UserModel.fromJson(data);
+      } else {
+        throw NetworkException(
+          'Failed to fetch user profile (HTTP ${response.statusCode}): ${response.body}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on NetworkException {
+      rethrow;
+    } on SocketException catch (e) {
+      throw NetworkException('Network connection failed: $e');
+    } on TimeoutException catch (e) {
+      throw NetworkException('Request timed out after ${timeout.inSeconds}s: $e');
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw NetworkException('Unexpected error fetching user profile: $e');
+    }
+  }
+
+  @override
   Future<Referral> createReferral(Referral referral) async {
     final payload = jsonEncode({
       'referral_id': referral.referralToken,
@@ -115,10 +228,12 @@ class ApiServiceImpl implements ApiService {
       final response = await _client
           .post(
             Uri.parse(_normalizeUrl('/referrals')),
-            headers: _defaultHeaders,
+            headers: _headers,
             body: payload,
           )
           .timeout(timeout);
+
+      _checkAuthError(response);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -157,9 +272,11 @@ class ApiServiceImpl implements ApiService {
       final response = await _client
           .get(
             Uri.parse(_normalizeUrl('/referrals/$referralId')),
-            headers: _defaultHeaders,
+            headers: _headers,
           )
           .timeout(timeout);
+
+      _checkAuthError(response);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -192,10 +309,12 @@ class ApiServiceImpl implements ApiService {
       final response = await _client
           .patch(
             Uri.parse(_normalizeUrl('/referrals/$referralId/status')),
-            headers: _defaultHeaders,
+            headers: _headers,
             body: payload,
           )
           .timeout(timeout);
+
+      _checkAuthError(response);
 
       if (response.statusCode == 200) {
         return;
@@ -233,7 +352,9 @@ class ApiServiceImpl implements ApiService {
       final baseUri = Uri.parse(_normalizeUrl('/referrals'));
       final uri = baseUri.replace(queryParameters: queryParams);
 
-      final response = await _client.get(uri, headers: _defaultHeaders).timeout(timeout);
+      final response = await _client.get(uri, headers: _headers).timeout(timeout);
+
+      _checkAuthError(response);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -271,7 +392,6 @@ class ApiServiceImpl implements ApiService {
 
   @override
   Future<List<IdentityMatch>> requestIdentityMatches(Patient incomingPatient) async {
-    // Reserved for Phase 3 RapidFuzz backend endpoint integration
     return [];
   }
 }
