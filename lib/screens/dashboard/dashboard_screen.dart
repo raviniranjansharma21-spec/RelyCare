@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/connectivity_indicator.dart';
 import '../../widgets/sync_status_indicator.dart';
 import '../../widgets/primary_button.dart';
-import '../../app/routes.dart';
 
 /// Main dashboard displaying active referrals, sync status, and quick actions.
 class DashboardScreen extends StatefulWidget {
@@ -28,12 +28,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SyncStatusIndicator(
             pendingCount: _pendingSyncCount,
             onSyncPressed: () {
-              Navigator.pushNamed(context, AppRoutes.syncStatus);
+              context.push('/sync-status');
             },
           ),
           IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.profile),
+            onPressed: () => context.push('/profile'),
           ),
         ],
       ),
@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Connectivity Banner
             ConnectivityIndicator(
               isOnline: _isOnline,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.syncStatus),
+              onTap: () => context.push('/sync-status'),
             ),
             const SizedBox(height: 16),
 
@@ -64,7 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text('Rampur Primary Health Centre', style: AppTextStyles.heading3),
                           Text('Facility Code: PHC-104 • District: East', style: AppTextStyles.bodySmall),
                         ],
@@ -89,12 +89,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
 
             // Quick Actions
-            const Text('Quick Actions', style: AppTextStyles.heading2),
+            Text('Quick Actions', style: AppTextStyles.heading2),
             const SizedBox(height: 12),
             PrimaryButton(
               label: 'Create New Referral (PHC)',
               icon: Icons.add_circle_outline,
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.createReferral),
+              onPressed: () => context.push('/create-referral'),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
@@ -104,7 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               icon: const Icon(Icons.list_alt_rounded, color: AppColors.primary),
               label: const Text('View All Referrals', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.referrals),
+              onPressed: () => context.push('/referrals'),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
@@ -114,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               icon: const Icon(Icons.fingerprint_rounded, color: AppColors.secondary),
               label: const Text('Patient Identity Matching', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold)),
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.identityMatching),
+              onPressed: () => context.push('/identity-matching'),
             ),
           ],
         ),

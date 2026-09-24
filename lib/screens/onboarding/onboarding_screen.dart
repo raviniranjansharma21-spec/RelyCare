@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/primary_button.dart';
-import '../../app/routes.dart';
 
 /// Onboarding screen explaining the offline referral and matching workflow.
 class OnboardingScreen extends StatelessWidget {
@@ -24,13 +24,13 @@ class OnboardingScreen extends StatelessWidget {
                 color: AppColors.primary,
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Seamless Referrals, Even Offline',
                 style: AppTextStyles.heading1,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Create and track patient referrals with zero paper loss. Automatically queues referrals when offline and synchronizes when connected.',
                 style: AppTextStyles.bodyLarge,
                 textAlign: TextAlign.center,
@@ -39,8 +39,7 @@ class OnboardingScreen extends StatelessWidget {
               PrimaryButton(
                 label: 'Get Started',
                 onPressed: () {
-                  // TODO (Frontend): Set onboarding completed flag
-                  Navigator.pushReplacementNamed(context, AppRoutes.login);
+                  context.go('/login');
                 },
               ),
             ],
